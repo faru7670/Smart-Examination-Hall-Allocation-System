@@ -1,220 +1,133 @@
 import {
-    collection, doc, getDocs, getDoc, addDoc, deleteDoc, writeBatch,
-    query, where, orderBy, serverTimestamp
+    collection, doc, getDocs, addDoc, deleteDoc, writeBatch, query, where
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { allocateSeats } from './allocate';
 
-// ─── STUDENTS ────────────────────────────────────────────────────────────────
-
-export async function getStudents(collegeId) {
-    if (!db) return [];
-    const q = query(collection(db, 'students'), where('collegeId', '==', collegeId), orderBy('student_id'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+function ensureDb() {
+    if (!db) throw new Error('Firestore not initialized. Check your .env file.');
 }
 
-export async function addStudent(collegeId, { student_id, name, subject_code }) {
-    if (!db) throw new Error('Firebase not initialized');
-    // Check duplicate
-    const q = query(collection(db, 'students'), where('collegeId', '==', collegeId), where('student_id', '==', student_id));
-    const existing = await getDocs(q);
-    if (!existing.empty) throw new Error(`Student ID ${student_id} already exists`);
-    await addDoc(collection(db, 'students'), { collegeId, student_id, name, subject_code, createdAt: serverTimestamp() });
+// ─── STUDENTS ─────────────────────────────────────────────────────────────────
+export async function getStudents() {
+    ensureDb();
+    const snap = await getDocs(collection(db, 'students'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.student_id.localeCompare(b.student_id));
 }
 
-export async function uploadStudents(collegeId, rows) {
-    if (!db) throw new Error('Firebase not initialized');
-    // Get existing IDs
-    const existing = await getStudents(collegeId);
+export async function addStudent(student) {
+    ensureDb();
+    const existing = await getDocs(query(collection(db, 'students'), where('student_id', '==', student.student_id)));
+    if (!existing.empty) throw new Error(`Student ID "${student.student_id}" already exists`);
+    await addDoc(collection(db, 'students'), student);
+}
+
+export async function uploadStudents(rows) {
+    ensureDb();
+    const existing = await getStudents();
     const existingIds = new Set(existing.map(s => s.student_id));
-
     let added = 0, duplicates = 0, errors = 0;
-    const batch = writeBatch(db);
-    let batchCount = 0;
-    const batches = [batch];
-
+    const chunks = [];
+    let current = writeBatch(db);
+    let count = 0;
     for (const row of rows) {
         const student_id = String(row[0] || '').trim();
         const name = String(row[1] || '').trim();
-        const subject_code = String(row[2] || '').trim();
+        const subject_code = String(row[2] || '').trim().toUpperCase();
         if (!student_id || !name || !subject_code) { errors++; continue; }
         if (existingIds.has(student_id)) { duplicates++; continue; }
-
-        if (batchCount === 490) {
-            batches.push(writeBatch(db));
-            batchCount = 0;
-        }
-        const ref = doc(collection(db, 'students'));
-        batches[batches.length - 1].set(ref, { collegeId, student_id, name, subject_code, createdAt: serverTimestamp() });
-        added++;
-        batchCount++;
+        if (count === 490) { chunks.push(current); current = writeBatch(db); count = 0; }
+        current.set(doc(collection(db, 'students')), { student_id, name, subject_code });
+        added++; count++;
     }
-    await Promise.all(batches.map(b => b.commit()));
-    return { added, duplicates, errors, total_in_file: rows.length, total_in_db: existing.length + added };
+    if (count > 0) chunks.push(current);
+    await Promise.all(chunks.map(b => b.commit()));
+    return { added, duplicates, errors, total: existing.length + added };
 }
 
-export async function clearStudents(collegeId) {
-    if (!db) throw new Error('Firebase not initialized');
-    const snap = await getDocs(query(collection(db, 'students'), where('collegeId', '==', collegeId)));
-    const snap2 = await getDocs(query(collection(db, 'allocations'), where('collegeId', '==', collegeId)));
-    const batch = writeBatch(db);
-    snap.docs.forEach(d => batch.delete(d.ref));
-    snap2.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
+export async function clearStudents() {
+    ensureDb();
+    const [sSnap, aSnap] = await Promise.all([
+        getDocs(collection(db, 'students')),
+        getDocs(collection(db, 'allocations'))
+    ]);
+    const b = writeBatch(db);
+    sSnap.docs.forEach(d => b.delete(d.ref));
+    aSnap.docs.forEach(d => b.delete(d.ref));
+    await b.commit();
 }
 
-// ─── HALLS ───────────────────────────────────────────────────────────────────
-
-export async function getHalls(collegeId) {
-    if (!db) return [];
-    const q = query(collection(db, 'halls'), where('collegeId', '==', collegeId), orderBy('name'));
-    const snap = await getDocs(q);
-    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+// ─── HALLS ────────────────────────────────────────────────────────────────────
+export async function getHalls() {
+    ensureDb();
+    const snap = await getDocs(collection(db, 'halls'));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export async function addHall(collegeId, { name, rows, cols }) {
-    if (!db) throw new Error('Firebase not initialized');
-    const q = query(collection(db, 'halls'), where('collegeId', '==', collegeId), where('name', '==', name));
-    const existing = await getDocs(q);
-    if (!existing.empty) throw new Error('Hall name already exists');
-    const capacity = rows * cols;
-    const ref = await addDoc(collection(db, 'halls'), { collegeId, name, rows: Number(rows), cols: Number(cols), capacity });
-    return { id: ref.id, collegeId, name, rows: Number(rows), cols: Number(cols), capacity };
+export async function addHall({ name, rows, cols }) {
+    ensureDb();
+    const existing = await getDocs(query(collection(db, 'halls'), where('name', '==', name)));
+    if (!existing.empty) throw new Error(`Hall "${name}" already exists`);
+    const capacity = Number(rows) * Number(cols);
+    const ref = await addDoc(collection(db, 'halls'), { name, rows: Number(rows), cols: Number(cols), capacity });
+    return { id: ref.id, name, rows: Number(rows), cols: Number(cols), capacity };
 }
 
-export async function deleteHall(collegeId, hallId) {
-    if (!db) throw new Error('Firebase not initialized');
-    const hallRef = doc(db, 'halls', hallId);
-    const hallDoc = await getDoc(hallRef);
-    if (!hallDoc.exists() || hallDoc.data().collegeId !== collegeId) throw new Error('Hall not found');
-    const allocSnap = await getDocs(query(collection(db, 'allocations'), where('collegeId', '==', collegeId), where('hall_id', '==', hallId)));
-    const batch = writeBatch(db);
-    allocSnap.docs.forEach(d => batch.delete(d.ref));
-    batch.delete(hallRef);
-    await batch.commit();
+export async function deleteHall(hallId) {
+    ensureDb();
+    const allocs = await getDocs(query(collection(db, 'allocations'), where('hall_id', '==', hallId)));
+    const b = writeBatch(db);
+    allocs.docs.forEach(d => b.delete(d.ref));
+    b.delete(doc(db, 'halls', hallId));
+    await b.commit();
 }
 
-// ─── ALLOCATIONS ─────────────────────────────────────────────────────────────
-
-export async function runAllocation(collegeId) {
-    if (!db) throw new Error('Firebase not initialized');
-    const [students, halls] = await Promise.all([getStudents(collegeId), getHalls(collegeId)]);
-    if (students.length === 0) throw new Error('No students. Upload data first.');
-    if (halls.length === 0) throw new Error('No halls. Add halls first.');
+// ─── ALLOCATION ───────────────────────────────────────────────────────────────
+export async function runAllocation() {
+    ensureDb();
+    const [students, halls] = await Promise.all([getStudents(), getHalls()]);
+    if (!students.length) throw new Error('No students! Upload student data first.');
+    if (!halls.length) throw new Error('No halls! Add halls first.');
 
     // Clear existing
-    const existing = await getDocs(query(collection(db, 'allocations'), where('collegeId', '==', collegeId)));
-    const clearBatch = writeBatch(db);
-    existing.docs.forEach(d => clearBatch.delete(d.ref));
-    await clearBatch.commit();
+    const old = await getDocs(collection(db, 'allocations'));
+    if (!old.empty) {
+        const b = writeBatch(db);
+        old.docs.forEach(d => b.delete(d.ref));
+        await b.commit();
+    }
 
     const { allocations, unallocated } = allocateSeats(students, halls);
 
-    // Save in batches of 490
-    let batch = writeBatch(db);
+    // Save in batches
+    const chunks = [];
+    let current = writeBatch(db);
     let count = 0;
-    const batches = [batch];
     for (const a of allocations) {
-        if (count === 490) { batches.push(writeBatch(db)); count = 0; }
-        batches[batches.length - 1].set(doc(collection(db, 'allocations')), { collegeId, ...a });
+        if (count === 490) { chunks.push(current); current = writeBatch(db); count = 0; }
+        current.set(doc(collection(db, 'allocations')), a);
         count++;
     }
-    await Promise.all(batches.map(b => b.commit()));
-
-    // Count violations
-    let violations = 0;
-    const byHall = {};
-    for (const a of allocations) { if (!byHall[a.hall_id]) byHall[a.hall_id] = []; byHall[a.hall_id].push(a); }
-    for (const seats of Object.values(byHall)) {
-        const sorted = seats.sort((a, b) => a.row_num - b.row_num || a.col_num - b.col_num);
-        for (let i = 0; i < sorted.length - 1; i++) {
-            if (sorted[i].row_num === sorted[i + 1].row_num && sorted[i + 1].col_num === sorted[i].col_num + 1 && sorted[i].subject_code === sorted[i + 1].subject_code) violations++;
-        }
-    }
-    return { allocated: allocations.length, unallocated: unallocated.length, violations };
+    if (count > 0) chunks.push(current);
+    await Promise.all(chunks.map(b => b.commit()));
+    return { allocated: allocations.length, unallocated: unallocated.length };
 }
 
-export async function getHallGrid(collegeId, hall) {
-    if (!db) return null;
-    const seatsSnap = await getDocs(query(collection(db, 'allocations'), where('collegeId', '==', collegeId), where('hall_id', '==', hall.id)));
-    const seats = seatsSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.row_num - b.row_num || a.col_num - b.col_num);
-    const grid = [];
-    for (let r = 1; r <= hall.rows; r++) {
-        const row = [];
-        for (let c = 1; c <= hall.cols; c++) {
-            const seat = seats.find(s => s.row_num === r && s.col_num === c);
-            row.push(seat || { row_num: r, col_num: c, empty: true });
-        }
-        grid.push(row);
-    }
-    return { hall, grid, total_seated: seats.length };
-}
-
-export async function getAllocations(collegeId) {
-    if (!db) return [];
-    const q = query(collection(db, 'allocations'), where('collegeId', '==', collegeId), orderBy('hall_name'), orderBy('row_num'), orderBy('col_num'));
-    const snap = await getDocs(q);
+export async function getAllocations() {
+    ensureDb();
+    const snap = await getDocs(collection(db, 'allocations'));
     return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-export async function searchAllocations(collegeId, searchQuery) {
-    if (!db) return [];
-    const snap = await getDocs(query(collection(db, 'allocations'), where('collegeId', '==', collegeId)));
-    const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    const q = searchQuery.toUpperCase();
-    return all.filter(a => String(a.student_id).toUpperCase().includes(q) || String(a.student_name).toUpperCase().includes(q));
+export async function getHallAllocation(hallId) {
+    ensureDb();
+    const snap = await getDocs(query(collection(db, 'allocations'), where('hall_id', '==', hallId)));
+    return snap.docs.map(d => ({ id: d.id, ...d.data() }));
 }
 
-// ─── ANALYTICS ───────────────────────────────────────────────────────────────
-
-export async function getAnalytics(collegeId) {
-    if (!db) return null;
-    const [students, halls, allocs] = await Promise.all([
-        getStudents(collegeId),
-        getHalls(collegeId),
-        getAllocations(collegeId)
-    ]);
-    const totalSeats = halls.reduce((sum, h) => sum + h.capacity, 0);
-    const subjectMap = {};
-    students.forEach(s => { subjectMap[s.subject_code] = (subjectMap[s.subject_code] || 0) + 1; });
-    const subjectDistribution = Object.entries(subjectMap).map(([subject_code, count]) => ({ subject_code, count }));
-    const hallUtilization = halls.map(h => ({
-        name: h.name,
-        capacity: h.capacity,
-        seated: allocs.filter(a => a.hall_id === h.id).length
-    }));
-    return {
-        totalStudents: students.length,
-        totalHalls: halls.length,
-        totalSeats,
-        allocatedStudents: allocs.length,
-        unallocatedStudents: students.length - allocs.length,
-        allocationPercentage: students.length > 0 ? Math.round((allocs.length / students.length) * 100) : 0,
-        subjectDistribution,
-        hallUtilization
-    };
-}
-
-// ─── USER PROFILE ─────────────────────────────────────────────────────────────
-
-export async function getUserProfile(uid) {
-    if (!db) return null;
-    const docSnap = await getDoc(doc(db, 'users', uid));
-    return docSnap.exists() ? { id: docSnap.id, ...docSnap.data() } : null;
-}
-
-export async function createUserProfile(uid, { email, collegeName, role = 'admin' }) {
-    if (!db) throw new Error('Firebase not initialized');
-    // Create college
-    const collegeRef = await addDoc(collection(db, 'colleges'), { name: collegeName, createdAt: serverTimestamp() });
-    // Create user
-    await writeBatch(db).set(doc(db, 'users', uid), {
-        uid, email, role, collegeId: collegeRef.id, collegeName
-    });
-    // Use separate set since batch needs commit
-    const b = writeBatch(db);
-    b.set(doc(db, 'users', uid), { uid, email, role, collegeId: collegeRef.id, collegeName });
-    await b.commit();
-    return { uid, email, role, collegeId: collegeRef.id, collegeName };
+export async function searchAllocations(q) {
+    ensureDb();
+    const all = await getAllocations();
+    const upper = q.toUpperCase();
+    return all.filter(a => String(a.student_id).toUpperCase().includes(upper) || String(a.student_name).toUpperCase().includes(upper));
 }

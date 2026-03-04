@@ -1,118 +1,73 @@
-import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { HiOutlineAcademicCap, HiOutlineLockClosed, HiOutlineMail } from 'react-icons/hi';
+import { useState } from 'react'
 
-export default function LoginPage() {
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const { login, user } = useAuth();
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        if (user) {
-            if (user.role === 'invigilator') navigate('/invigilator-dashboard');
-            else navigate('/dashboard');
-        }
-    }, [user, navigate]);
-
-    if (user) return null;
+export default function LoginPage({ onLogin }) {
+    const [password, setPassword] = useState('')
+    const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setLoading(true);
-        try {
-            await login(email, password);
-            // navigation handled by useEffect
-        } catch (err) {
-            setError(err.message || 'Login failed. Check your credentials and try again.');
-        } finally {
-            setLoading(false);
+        e.preventDefault()
+        setLoading(true)
+        setError('')
+        await new Promise(r => setTimeout(r, 400))
+        const ok = onLogin(password)
+        if (!ok) {
+            setError('Incorrect password. Default is: admin123')
         }
-    };
+        setLoading(false)
+    }
 
     return (
-        <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-dark-950 via-primary-900/20 to-dark-950" />
-            <div className="absolute top-1/4 -left-20 w-72 h-72 bg-primary-500/20 rounded-full blur-3xl animate-float" />
-            <div className="absolute bottom-1/4 -right-20 w-72 h-72 bg-accent-500/20 rounded-full blur-3xl animate-float" style={{ animationDelay: '3s' }} />
+        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+            {/* Animated background */}
+            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse" />
+                <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-blue-600/5 rounded-full blur-2xl" />
+            </div>
 
-            <div className="relative z-10 w-full max-w-md">
+            <div className="relative w-full max-w-md">
                 {/* Logo */}
-                <div className="text-center mb-8 animate-slide-up">
-                    <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-primary-500 to-accent-500 mb-4 shadow-2xl shadow-primary-500/30 animate-pulse-glow">
-                        <HiOutlineAcademicCap className="w-8 h-8 text-white" />
+                <div className="text-center mb-10">
+                    <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl shadow-2xl shadow-indigo-500/30">
+                        🏛️
                     </div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-white to-dark-300 bg-clip-text text-transparent">ExamHall SaaS</h1>
-                    <p className="text-dark-400 mt-1">Global College Examination Logistics</p>
+                    <h1 className="text-3xl font-extrabold text-white">ExamHall</h1>
+                    <p className="text-slate-400 mt-1">Smart Seat Allocation System</p>
                 </div>
 
-                {/* Login Card */}
-                <div className="glass-card p-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-                    <h2 className="text-xl font-bold text-white mb-6">Staff Portal Login</h2>
-
-                    {error && (
-                        <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-sm">
-                            {error}
-                        </div>
-                    )}
-
+                {/* Form */}
+                <div className="bg-slate-900/70 backdrop-blur-sm border border-slate-800 rounded-2xl p-8 shadow-2xl">
+                    <h2 className="text-xl font-bold text-white mb-6">Admin Login</h2>
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm font-medium text-dark-300 mb-2">Email Address</label>
-                            <div className="relative">
-                                <HiOutlineMail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400" />
-                                <input
-                                    id="login-email"
-                                    type="email"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                    className="input-field pl-12"
-                                    placeholder="Enter registered email"
-                                    required
-                                />
-                            </div>
+                            <label className="block text-sm text-slate-400 mb-2">Password</label>
+                            <input
+                                type="password"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder="Enter admin password"
+                                required
+                                autoFocus
+                                className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                            />
                         </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-dark-300 mb-2">Password</label>
-                            <div className="relative">
-                                <HiOutlineLockClosed className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400" />
-                                <input
-                                    id="login-password"
-                                    type="password"
-                                    value={password}
-                                    onChange={e => setPassword(e.target.value)}
-                                    className="input-field pl-12"
-                                    placeholder="Enter password"
-                                    required
-                                />
+                        {error && (
+                            <div className="bg-red-500/10 border border-red-500/30 rounded-xl p-3 text-red-400 text-sm">
+                                {error}
                             </div>
-                        </div>
-
-                        <button id="login-submit" type="submit" disabled={loading} className="btn-primary w-full flex items-center justify-center gap-2">
-                            {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Log In Securely'}
+                        )}
+                        <button
+                            type="submit"
+                            disabled={loading}
+                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                        >
+                            {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '🔓 Login'}
                         </button>
                     </form>
-
-                    <div className="mt-6 pt-6 border-t border-dark-700/50 text-center space-y-3">
-                        <p className="text-sm text-dark-400">
-                            Is your college new to ExamHall? <Link to="/register" className="text-primary-400 hover:text-primary-300 transition-colors">Register College</Link>
-                        </p>
-                    </div>
-                </div>
-
-                {/* Student lookup link */}
-                <div className="text-center mt-6 animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                    <Link to="/lookup" className="text-sm font-medium text-accent-400 hover:text-accent-300 transition-colors flex items-center justify-center gap-1">
-                        Student? Go to Public Dashboard →
-                    </Link>
+                    <p className="text-xs text-slate-600 mt-4 text-center">Default password: admin123</p>
                 </div>
             </div>
         </div>
-    );
+    )
 }

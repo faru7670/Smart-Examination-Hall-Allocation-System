@@ -1,118 +1,111 @@
 import { useState, useEffect } from 'react'
-import { useAuth } from '../context/AuthContext'
 import { getAllocations } from '../lib/db'
-import { HiOutlineDocumentDownload, HiOutlineTable, HiOutlineDocumentText } from 'react-icons/hi'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import Papa from 'papaparse'
 
 export default function ReportsPage() {
-    const { user } = useAuth()
     const [allocations, setAllocations] = useState([])
     const [loading, setLoading] = useState(true)
+    const [search, setSearch] = useState('')
 
     useEffect(() => {
-        if (!user?.collegeId) return
-        getAllocations(user.collegeId).then(data => setAllocations(Array.isArray(data) ? data : [])).catch(() => { }).finally(() => setLoading(false))
-    }, [user?.collegeId])
+        getAllocations().then(d => setAllocations(Array.isArray(d) ? d : [])).catch(() => { }).finally(() => setLoading(false))
+    }, [])
 
-    const handleDownloadCSV = () => {
-        if (allocations.length === 0) return
+    const filtered = search ? allocations.filter(a =>
+        String(a.student_id).toUpperCase().includes(search.toUpperCase()) ||
+        String(a.student_name).toUpperCase().includes(search.toUpperCase()) ||
+        String(a.hall_name).toUpperCase().includes(search.toUpperCase()) ||
+        String(a.subject_code).toUpperCase().includes(search.toUpperCase())
+    ) : allocations
+
+    const downloadCSV = () => {
         const csv = Papa.unparse(allocations.map(a => ({
-            'Student ID': a.student_id,
-            'Name': a.student_name,
-            'Subject': a.subject_code,
-            'Hall': a.hall_name,
-            'Row': a.row_num,
-            'Col': a.col_num,
+            'Student ID': a.student_id, 'Name': a.student_name,
+            'Subject': a.subject_code, 'Hall': a.hall_name,
+            'Row': a.row_num, 'Col': a.col_num
         })))
-        const blob = new Blob([csv], { type: 'text/csv' })
-        const url = URL.createObjectURL(blob)
-        const link = document.createElement('a')
-        link.href = url; link.download = 'seat_allocation.csv'
-        document.body.appendChild(link); link.click(); link.remove()
-        URL.revokeObjectURL(url)
+        const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+        const a = document.createElement('a'); a.href = url; a.download = 'allocation.csv'
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url)
     }
 
-    const handleDownloadPDF = () => {
-        if (allocations.length === 0) return
+    const downloadPDF = () => {
         const doc = new jsPDF()
-        doc.setFontSize(16)
-        doc.text('Seat Allocation Report', 14, 15)
-        doc.setFontSize(10)
-        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22)
+        doc.setFontSize(18); doc.setTextColor(99, 102, 241)
+        doc.text('ExamHall — Seat Allocation Report', 14, 16)
+        doc.setFontSize(10); doc.setTextColor(150, 150, 150)
+        doc.text(`Generated: ${new Date().toLocaleString()} · Total: ${allocations.length} seats`, 14, 24)
         autoTable(doc, {
-            startY: 28,
-            head: [['Student ID', 'Name', 'Subject', 'Hall', 'Seat']],
-            body: allocations.map(a => [a.student_id, a.student_name, a.subject_code, a.hall_name, `R${a.row_num}C${a.col_num}`]),
-            styles: { fontSize: 9 },
-            headStyles: { fillColor: [99, 102, 241] }
+            startY: 30,
+            head: [['Student ID', 'Name', 'Subject', 'Hall', 'Row', 'Col']],
+            body: allocations.map(a => [a.student_id, a.student_name, a.subject_code, a.hall_name, a.row_num, a.col_num]),
+            headStyles: { fillColor: [99, 102, 241], textColor: 255, fontSize: 9 },
+            bodyStyles: { fontSize: 8 },
+            alternateRowStyles: { fillColor: [240, 240, 255] }
         })
         doc.save('seat_allocation.pdf')
     }
 
     return (
-        <div className="space-y-8 max-w-7xl mx-auto">
+        <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="page-title">Reports & Exports</h1>
-                    <p className="text-dark-400 mt-1">Download seating charts and allocation data</p>
+                    <h2 className="text-2xl font-bold text-white">📊 Reports</h2>
+                    <p className="text-slate-400 text-sm mt-1">{allocations.length} allocations total</p>
                 </div>
-                <div className="flex items-center gap-3">
-                    <button onClick={handleDownloadCSV} disabled={allocations.length === 0} className="btn-secondary flex items-center gap-2">
-                        <HiOutlineTable className="w-5 h-5" /> Export CSV
+                <div className="flex gap-3">
+                    <button onClick={downloadCSV} disabled={!allocations.length}
+                        className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white text-sm font-medium border border-slate-700 transition-all disabled:opacity-40 flex items-center gap-2">
+                        📋 Export CSV
                     </button>
-                    <button onClick={handleDownloadPDF} disabled={allocations.length === 0} className="btn-primary flex items-center gap-2">
-                        <HiOutlineDocumentDownload className="w-5 h-5" /> Download PDF
+                    <button onClick={downloadPDF} disabled={!allocations.length}
+                        className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-all disabled:opacity-40 flex items-center gap-2">
+                        📄 Download PDF
                     </button>
                 </div>
             </div>
 
+            {allocations.length > 0 && (
+                <input value={search} onChange={e => setSearch(e.target.value)}
+                    placeholder="Search by student, hall, or subject..."
+                    className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 text-sm" />
+            )}
+
             {loading ? (
-                <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
+                <div className="flex justify-center py-10"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
             ) : allocations.length > 0 ? (
-                <div className="glass-card overflow-hidden animate-slide-up">
-                    <div className="p-4 border-b border-dark-700/50 flex items-center gap-3">
-                        <HiOutlineDocumentText className="w-5 h-5 text-primary-400" />
-                        <span className="font-semibold">{allocations.length} Allocated Seats</span>
-                    </div>
-                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
+                    {search && <p className="px-5 py-2 text-sm text-slate-400 border-b border-slate-800">{filtered.length} result{filtered.length !== 1 ? 's' : ''}</p>}
+                    <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                         <table className="w-full text-sm">
-                            <thead className="bg-dark-800/50 sticky top-0">
+                            <thead className="bg-slate-800 sticky top-0">
                                 <tr>
-                                    <th className="text-left px-6 py-3 font-medium text-dark-400">Student ID</th>
-                                    <th className="text-left px-6 py-3 font-medium text-dark-400">Name</th>
-                                    <th className="text-left px-6 py-3 font-medium text-dark-400">Subject</th>
-                                    <th className="text-left px-6 py-3 font-medium text-dark-400">Hall</th>
-                                    <th className="text-center px-6 py-3 font-medium text-dark-400">Seat</th>
+                                    {['Student ID', 'Name', 'Subject', 'Hall', 'Seat'].map(h => (
+                                        <th key={h} className="text-left px-5 py-3 text-slate-400 font-medium">{h}</th>
+                                    ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-dark-700/30">
-                                {allocations.slice(0, 100).map((a, i) => (
-                                    <tr key={i} className="hover:bg-dark-700/20 transition-colors">
-                                        <td className="px-6 py-3 font-mono text-primary-400">{a.student_id}</td>
-                                        <td className="px-6 py-3 text-white">{a.student_name}</td>
-                                        <td className="px-6 py-3"><span className="badge bg-primary-500/20 text-primary-300">{a.subject_code}</span></td>
-                                        <td className="px-6 py-3 text-white">{a.hall_name}</td>
-                                        <td className="px-6 py-3 text-center">
-                                            <span className="inline-flex items-center justify-center w-14 h-8 rounded-lg bg-dark-800 border border-dark-600 font-mono text-xs text-dark-300">R{a.row_num}C{a.col_num}</span>
-                                        </td>
+                            <tbody className="divide-y divide-slate-800/50">
+                                {filtered.slice(0, 200).map((a, i) => (
+                                    <tr key={i} className="hover:bg-slate-800/30 transition-colors">
+                                        <td className="px-5 py-3 font-mono text-indigo-400">{a.student_id}</td>
+                                        <td className="px-5 py-3 text-white">{a.student_name}</td>
+                                        <td className="px-5 py-3"><span className="px-2 py-0.5 rounded bg-indigo-500/20 text-indigo-300 text-xs">{a.subject_code}</span></td>
+                                        <td className="px-5 py-3 text-slate-300">{a.hall_name}</td>
+                                        <td className="px-5 py-3 font-mono text-slate-400 text-xs">R{a.row_num}·C{a.col_num}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                        {allocations.length > 100 && (
-                            <div className="p-4 text-center border-t border-dark-700/50 text-dark-400 text-sm">
-                                Showing first 100. Download full report for all records.
-                            </div>
-                        )}
+                        {filtered.length > 200 && <p className="text-center py-3 text-slate-500 text-sm">Showing 200 of {filtered.length}</p>}
                     </div>
                 </div>
             ) : (
-                <div className="glass-card p-12 text-center text-dark-400">
-                    <HiOutlineDocumentDownload className="w-12 h-12 mx-auto mb-4 opacity-50 text-primary-500" />
-                    <p className="text-lg">No allocations found</p>
-                    <p className="text-sm mt-1">Run the allocation algorithm first to generate reports.</p>
+                <div className="text-center py-16 text-slate-500">
+                    <div className="text-6xl mb-4">📊</div>
+                    <p>No allocations yet. Run allocation from the Allocation tab.</p>
                 </div>
             )}
         </div>
