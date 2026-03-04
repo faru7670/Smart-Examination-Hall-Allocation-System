@@ -9,11 +9,11 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const { getDb } = require('./database/db');
+// Import Firebase config just to ensure it initializes on startup
+require('./config/firebase');
 
 async function startServer() {
-    await getDb();
-    console.log('Database initialized.');
+    console.log('Firebase initialized. Starting server...');
 
     app.use('/api/auth', require('./routes/auth'));
     app.use('/api/students', require('./routes/students'));
@@ -21,7 +21,7 @@ async function startServer() {
     app.use('/api/allocations', require('./routes/allocation'));
     app.use('/api/allocate', require('./routes/allocation'));
     app.use('/api/analytics', require('./routes/analytics'));
-    app.use('/api/export', require('./routes/export'));
+    app.use('/api/export', require('./routes/export').router);
     app.use('/api/qrcode', require('./routes/qrcode'));
 
     app.get('/api/health', (req, res) => {

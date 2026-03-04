@@ -1,61 +1,68 @@
-import { createContext, useContext, useState, useEffect } from 'react'
-import axios from 'axios'
+import { createContext, useContext, useState, useEffect } from 'react';
+import axios from 'axios';
+import { auth } from '../firebase';
+import { onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWithEmailAndPassword } from 'firebase/auth';
 
-const AuthContext = createContext(null)
+const AuthContext = createContext(null);
 
-const API = axios.create({ baseURL: '/api' })
-
-// Add JWT token to all requests
-API.interceptors.request.use(config => {
-    const token = localStorage.getItem('examhall_token')
-    if (token) config.headers.Authorization = `Bearer ${token}`
-    return config
-})
-
-API.interceptors.response.use(
-    res => res,
-    err => {
-        if (err.response?.status === 401) {
-            localStorage.removeItem('examhall_token')
-            localStorage.removeItem('examhall_user')
-        }
-        return Promise.reject(err)
-    }
-)
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null)
-    const [loading, setLoading] = useState(true)
+    const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const saved = localStorage.getItem('examhall_user')
-        const token = localStorage.getItem('examhall_token')
-        if (saved && token) {
-            setUser(JSON.parse(saved))
-        }
-        setLoading(false)
-    }, [])
+        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+            if (firebaseUser) {
+                try {
+                    // Get custom claims or user profile from our backend
+                    const token = await firebaseUser.getIdToken();
+                    const res = await axios.get('/api/auth/me', {
+                        headers: { Authorization: `Bearer ${token}` }
+                    });
+                    setUser({ ...firebaseUser, ...res.data.user });
+                } catch (err) {
+                    console.error("Failed to fetch user profile", err);
+                    setUser(firebaseUser); // fallback
+                }
+            } else {
+                setUser(null);
+            }
+            setLoading(false);
+        });
+        return unsubscribe;
+    }, []);
 
-    const login = async (username, password) => {
-        const res = await API.post('/auth/login', { username, password })
-        localStorage.setItem('examhall_token', res.data.token)
-        localStorage.setItem('examhall_user', JSON.stringify(res.data.user))
-        setUser(res.data.user)
-        return res.data.user
-    }
+    const login = async (email, password) => {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        return userCredential.user;
+    };
 
-    const logout = () => {
-        localStorage.removeItem('examhall_token')
-        localStorage.removeItem('examhall_user')
-        setUser(null)
-    }
+    const registerCollege = async (email, password, collegeName) => {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const token = await userCredential.user.getIdToken();
+
+        // Setup backend profile
+        await axios.post('/api/auth/setup-college', { collegeName }, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        // Refresh profile state
+        const res = await axios.get('/api/auth/me', {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setUser({ ...userCredential.user, ...res.data.user });
+        return userCredential.user;
+    };
+
+    const logoutUser = () => {
+        return signOut(auth);
+    };
 
     return (
-        <AuthContext.Provider value={{ user, login, logout, loading }}>
+        <AuthContext.Provider value={{ user, login, registerCollege, logout: logoutUser, loading }}>
             {children}
         </AuthContext.Provider>
-    )
+    );
 }
 
-export const useAuth = () => useContext(AuthContext)
-export { API }
+export const useAuth = () => useContext(AuthContext);

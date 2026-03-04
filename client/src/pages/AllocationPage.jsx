@@ -1,6 +1,9 @@
-import { useState, useEffect } from 'react'
-import { API, useAuth } from '../context/AuthContext'
-import { HiOutlinePlay, HiOutlineRefresh, HiOutlineCheckCircle, HiOutlineExclamation } from 'react-icons/hi'
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import API from '../api';
+import { HiOutlinePlay, HiOutlineRefresh, HiOutlineCheckCircle, HiOutlineExclamation, HiOutlineCube, HiOutlineViewGrid } from 'react-icons/hi';
+import ThreeDHall from '../components/ThreeDHall';
 
 const SUBJECT_COLORS = [
     { bg: 'bg-indigo-500/20', text: 'text-indigo-300', border: 'border-indigo-500/30', hex: '#818cf8' },
@@ -13,59 +16,60 @@ const SUBJECT_COLORS = [
     { bg: 'bg-orange-500/20', text: 'text-orange-300', border: 'border-orange-500/30', hex: '#fb923c' },
     { bg: 'bg-teal-500/20', text: 'text-teal-300', border: 'border-teal-500/30', hex: '#2dd4bf' },
     { bg: 'bg-rose-500/20', text: 'text-rose-300', border: 'border-rose-500/30', hex: '#fb7185' },
-]
+];
 
-export default function AllocationPage() {
-    const { user } = useAuth()
-    const [halls, setHalls] = useState([])
-    const [selectedHall, setSelectedHall] = useState(null)
-    const [gridData, setGridData] = useState(null)
-    const [allocating, setAllocating] = useState(false)
-    const [result, setResult] = useState(null)
-    const [loading, setLoading] = useState(true)
-    const [subjectMap, setSubjectMap] = useState({})
-    const [selectedSeat, setSelectedSeat] = useState(null)
+export default function AllocationPage({ isPublic = false }) {
+    const { user } = isPublic ? { user: null } : useAuth();
+    const [halls, setHalls] = useState([]);
+    const [selectedHall, setSelectedHall] = useState(null);
+    const [gridData, setGridData] = useState(null);
+    const [allocating, setAllocating] = useState(false);
+    const [result, setResult] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [subjectMap, setSubjectMap] = useState({});
+    const [selectedSeat, setSelectedSeat] = useState(null);
+    const [viewMode, setViewMode] = useState('3d');
 
-    useEffect(() => { fetchHalls() }, [])
+    useEffect(() => { fetchHalls(); }, []);
 
     const fetchHalls = async () => {
-        setLoading(true)
+        setLoading(true);
         try {
-            const r = await API.get('/halls')
-            setHalls(r.data)
-            if (r.data.length > 0) loadHallGrid(r.data[0])
-        } catch (e) { }
-        setLoading(false)
-    }
+            const r = isPublic ? await axios.get('/api/halls') : await API.get('/halls');
+            setHalls(r.data);
+            if (r.data.length > 0) loadHallGrid(r.data[0]);
+        } catch (e) { console.error(e); }
+        setLoading(false);
+    };
 
     const loadHallGrid = async (hall) => {
-        setSelectedHall(hall)
+        setSelectedHall(hall);
         try {
-            const r = await API.get(`/allocations/hall/${hall.id}`)
-            setGridData(r.data)
-            // Build subject color map
-            const subjects = new Set()
-            r.data.grid.forEach(row => row.forEach(seat => { if (!seat.empty) subjects.add(seat.subject_code) }))
-            const map = {}
-            Array.from(subjects).sort().forEach((s, i) => { map[s] = SUBJECT_COLORS[i % SUBJECT_COLORS.length] })
-            setSubjectMap(map)
+            const r = isPublic ? await axios.get(`/api/allocations/hall/${hall.id}`) : await API.get(`/allocations/hall/${hall.id}`);
+            setGridData(r.data);
+
+            const subjects = new Set();
+            r.data.grid.forEach(row => row.forEach(seat => { if (!seat.empty) subjects.add(seat.subject_code); }));
+            const map = {};
+            Array.from(subjects).sort().forEach((s, i) => { map[s] = SUBJECT_COLORS[i % SUBJECT_COLORS.length]; });
+            setSubjectMap(map);
         } catch (e) {
-            setGridData(null)
+            setGridData(null);
         }
-    }
+    };
 
     const handleAllocate = async () => {
-        setAllocating(true)
-        setResult(null)
+        setAllocating(true);
+        setResult(null);
         try {
-            const r = await API.post('/allocate')
-            setResult(r.data)
-            if (selectedHall) loadHallGrid(selectedHall)
+            const r = await API.post('/allocate');
+            setResult(r.data);
+            if (selectedHall) loadHallGrid(selectedHall);
         } catch (err) {
-            setResult({ error: err.response?.data?.error || 'Allocation failed' })
+            setResult({ error: err.response?.data?.error || 'Allocation failed' });
         }
-        setAllocating(false)
-    }
+        setAllocating(false);
+    };
 
     return (
         <div className="space-y-6 max-w-7xl mx-auto">
@@ -82,7 +86,6 @@ export default function AllocationPage() {
                 )}
             </div>
 
-            {/* Allocation Result */}
             {result && (
                 <div className={`glass-card p-6 animate-slide-up ${result.error ? 'border-red-500/50' : 'border-emerald-500/50'}`}>
                     {result.error ? (
@@ -103,7 +106,6 @@ export default function AllocationPage() {
                 </div>
             )}
 
-            {/* Hall Tabs */}
             {halls.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     {halls.map(hall => (
@@ -111,8 +113,8 @@ export default function AllocationPage() {
                             key={hall.id}
                             onClick={() => loadHallGrid(hall)}
                             className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${selectedHall?.id === hall.id
-                                    ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
-                                    : 'text-dark-400 hover:text-white hover:bg-dark-700/50 border border-transparent'
+                                ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
+                                : 'text-dark-400 hover:text-white hover:bg-dark-700/50 border border-transparent'
                                 }`}
                         >
                             {hall.name} ({hall.capacity})
@@ -121,7 +123,6 @@ export default function AllocationPage() {
                 </div>
             )}
 
-            {/* Legend */}
             {Object.keys(subjectMap).length > 0 && (
                 <div className="flex flex-wrap gap-3">
                     {Object.entries(subjectMap).map(([subject, color]) => (
@@ -133,48 +134,71 @@ export default function AllocationPage() {
                 </div>
             )}
 
-            {/* Seating Grid */}
             {gridData ? (
-                <div className="glass-card p-6 animate-slide-up overflow-x-auto">
-                    <div className="flex items-center justify-between mb-4">
+                <div className="glass-card p-6 animate-slide-up overflow-hidden">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                         <h3 className="text-lg font-semibold text-white">{selectedHall?.name} — {gridData.total_seated}/{selectedHall?.capacity} seats</h3>
-                        <button onClick={() => loadHallGrid(selectedHall)} className="btn-ghost"><HiOutlineRefresh className="w-4 h-4" /></button>
-                    </div>
-
-                    {/* Column headers */}
-                    <div className="inline-block min-w-full">
-                        <div className="flex gap-1 mb-1 ml-10">
-                            {Array.from({ length: selectedHall?.cols || 0 }).map((_, c) => (
-                                <div key={c} className="w-20 text-center text-xs text-dark-500">C{c + 1}</div>
-                            ))}
+                        <div className="flex items-center gap-2 bg-dark-800/50 p-1 rounded-lg">
+                            <button onClick={() => setViewMode('2d')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === '2d' ? 'bg-primary-500 text-white shadow-lg' : 'text-dark-400 hover:text-white'}`}>
+                                <HiOutlineViewGrid className="w-4 h-4" /> 2D
+                            </button>
+                            <button onClick={() => setViewMode('3d')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === '3d' ? 'bg-primary-500 text-white shadow-lg' : 'text-dark-400 hover:text-white'}`}>
+                                <HiOutlineCube className="w-4 h-4" /> 3D
+                            </button>
+                            <div className="w-px h-6 bg-dark-700 mx-1"></div>
+                            <button onClick={() => loadHallGrid(selectedHall)} className="p-2 text-dark-400 hover:text-white transition-colors" title="Refresh">
+                                <HiOutlineRefresh className="w-5 h-5" />
+                            </button>
                         </div>
-
-                        {gridData.grid.map((row, ri) => (
-                            <div key={ri} className="flex gap-1 mb-1">
-                                <div className="w-9 flex items-center justify-center text-xs text-dark-500 flex-shrink-0">R{ri + 1}</div>
-                                {row.map((seat, ci) => {
-                                    const color = seat.empty ? null : subjectMap[seat.subject_code]
-                                    return (
-                                        <div
-                                            key={ci}
-                                            onClick={() => !seat.empty && setSelectedSeat(seat)}
-                                            className={`w-20 h-14 rounded-lg flex flex-col items-center justify-center text-xs transition-all cursor-pointer ${seat.empty
-                                                    ? 'bg-dark-800/30 border border-dark-700/30'
-                                                    : `${color?.bg || 'bg-dark-700'} border ${color?.border || 'border-dark-600'} hover:scale-105 hover:shadow-lg`
-                                                }`}
-                                        >
-                                            {!seat.empty && (
-                                                <>
-                                                    <span className={`font-semibold ${color?.text || 'text-white'} text-[10px] truncate w-full text-center px-1`}>{seat.student_id}</span>
-                                                    <span className="text-dark-400 text-[9px] truncate w-full text-center">{seat.subject_code}</span>
-                                                </>
-                                            )}
-                                        </div>
-                                    )
-                                })}
-                            </div>
-                        ))}
                     </div>
+
+                    {viewMode === '3d' ? (
+                        <div className="w-full h-[500px] rounded-xl overflow-hidden shadow-inner border border-dark-700/50">
+                            <ThreeDHall
+                                hall={selectedHall}
+                                gridData={gridData.grid}
+                                subjectMap={subjectMap}
+                                onSeatClick={setSelectedSeat}
+                                height="100%"
+                            />
+                        </div>
+                    ) : (
+                        <div className="overflow-x-auto pb-4">
+                            <div className="inline-block min-w-full">
+                                <div className="flex gap-1 mb-1 ml-10">
+                                    {Array.from({ length: selectedHall?.cols || 0 }).map((_, c) => (
+                                        <div key={c} className="w-20 text-center text-xs text-dark-500">C{c + 1}</div>
+                                    ))}
+                                </div>
+
+                                {gridData.grid.map((row, ri) => (
+                                    <div key={ri} className="flex gap-1 mb-1">
+                                        <div className="w-9 flex items-center justify-center text-xs text-dark-500 flex-shrink-0">R{ri + 1}</div>
+                                        {row.map((seat, ci) => {
+                                            const color = seat.empty ? null : subjectMap[seat.subject_code];
+                                            return (
+                                                <div
+                                                    key={ci}
+                                                    onClick={() => !seat.empty && setSelectedSeat(seat)}
+                                                    className={`w-20 h-14 rounded-lg flex flex-col items-center justify-center text-xs transition-all cursor-pointer ${seat.empty
+                                                        ? 'bg-dark-800/30 border border-dark-700/30'
+                                                        : `${color?.bg || 'bg-dark-700'} border ${color?.border || 'border-dark-600'} hover:scale-105 hover:shadow-lg`
+                                                        }`}
+                                                >
+                                                    {!seat.empty && (
+                                                        <>
+                                                            <span className={`font-semibold ${color?.text || 'text-white'} text-[10px] truncate w-full text-center px-1`}>{seat.student_id}</span>
+                                                            <span className="text-dark-400 text-[9px] truncate w-full text-center">{seat.subject_code}</span>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             ) : loading ? (
                 <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
@@ -184,7 +208,6 @@ export default function AllocationPage() {
                 </div>
             )}
 
-            {/* Seat Detail Modal */}
             {selectedSeat && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setSelectedSeat(null)}>
                     <div className="glass-card p-8 max-w-sm w-full mx-4 animate-slide-up" onClick={e => e.stopPropagation()}>
@@ -201,5 +224,5 @@ export default function AllocationPage() {
                 </div>
             )}
         </div>
-    )
+    );
 }

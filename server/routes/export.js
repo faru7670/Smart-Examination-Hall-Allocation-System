@@ -1,28 +1,34 @@
 const express = require('express');
-const { queryAll } = require('../database/db');
+const { db } = require('../config/firebase');
 const PDFDocument = require('pdfkit');
-const { authenticate } = require('../middleware/auth');
 const router = express.Router();
 
-router.get('/csv', authenticate, (req, res) => {
-    try {
-        const allocs = queryAll('SELECT student_id, student_name, subject_code, hall_name, row_num, col_num FROM allocations ORDER BY hall_name, row_num, col_num');
-        let csv = 'StudentID,StudentName,SubjectCode,Hall,Row,Column\n';
-        for (const a of allocs) csv += `${a.student_id},${a.student_name},${a.subject_code},${a.hall_name},${a.row_num},${a.col_num}\n`;
-        res.setHeader('Content-Type', 'text/csv');
-        res.setHeader('Content-Disposition', 'attachment; filename="seat_allocation.csv"');
-        res.send(csv);
-    } catch (err) { res.status(500).json({ error: err.message }); }
-});
+// Utility for fetching data (since these routes can be public if collegeId is provided)
+const getExportData = async (collegeId) => {
+    if (!collegeId) throw new Error('collegeId is required for export');
 
-router.get('/pdf', authenticate, (req, res) => {
-    try {
-        const halls = queryAll('SELECT * FROM halls ORDER BY name');
-        const allocs = queryAll('SELECT * FROM allocations ORDER BY hall_name, row_num, col_num');
+    const [hallsSnap, allocsSnap] = await Promise.all([
+        db.collection('halls').where('collegeId', '==', collegeId).orderBy('name').get(),
+        db.collection('allocations').where('collegeId', '==', collegeId).orderBy('hall_name').get()
+    ]);
+
+    // Sort allocs in memory
+    const allocs = allocsSnap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.hall_name.localeCompare(b.hall_name) || a.row_num - b.row_num || a.col - b.col);
+    const halls = hallsSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+
+    return { halls, allocs };
+};
+
+const generatePDFBuffer = (halls, allocs) => {
+    return new Promise((resolve, reject) => {
         const doc = new PDFDocument({ size: 'A4', margin: 40 });
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', 'attachment; filename="seat_allocation.pdf"');
-        doc.pipe(res);
+        const buffers = [];
+        doc.on('data', buffers.push.bind(buffers));
+        doc.on('end', () => {
+            const pdfData = Buffer.concat(buffers);
+            resolve(pdfData);
+        });
+        doc.on('error', reject);
 
         doc.fontSize(20).font('Helvetica-Bold').text('Smart Examination Hall Allocation Report', { align: 'center' });
         doc.moveDown(0.5);
@@ -49,7 +55,30 @@ router.get('/pdf', authenticate, (req, res) => {
             }
         }
         doc.end();
+    });
+};
+
+router.get('/csv', async (req, res) => {
+    try {
+        const collegeId = req.user?.collegeId || req.query.collegeId;
+        const { allocs } = await getExportData(collegeId);
+        let csv = 'StudentID,StudentName,SubjectCode,Hall,Row,Column\n';
+        for (const a of allocs) csv += `${a.student_id},${a.student_name},${a.subject_code},${a.hall_name},${a.row_num},${a.col_num}\n`;
+        res.setHeader('Content-Type', 'text/csv');
+        res.setHeader('Content-Disposition', 'attachment; filename="seat_allocation.csv"');
+        res.send(csv);
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
-module.exports = router;
+router.get('/pdf', async (req, res) => {
+    try {
+        const collegeId = req.user?.collegeId || req.query.collegeId;
+        const { halls, allocs } = await getExportData(collegeId);
+        const pdfBuffer = await generatePDFBuffer(halls, allocs);
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', 'attachment; filename="seat_allocation.pdf"');
+        res.send(pdfBuffer);
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+module.exports = { router, generatePDFBuffer, getExportData };

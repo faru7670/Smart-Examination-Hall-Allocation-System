@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API } from '../context/AuthContext'
+import API from '../api'
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineOfficeBuilding } from 'react-icons/hi'
 
 export default function HallsPage() {

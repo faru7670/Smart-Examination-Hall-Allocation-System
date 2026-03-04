@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { API } from '../context/AuthContext'
+import API from '../api'
 import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from 'chart.js'
 import { Doughnut, Bar } from 'react-chartjs-2'
 import { HiOutlineUsers, HiOutlineOfficeBuilding, HiOutlineViewGrid, HiOutlineCheckCircle, HiOutlineExclamationCircle } from 'react-icons/hi'

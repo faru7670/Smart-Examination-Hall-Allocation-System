@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { API } from '../context/AuthContext'
-import { HiOutlineUpload, HiOutlineTrash, HiOutlineDocumentText, HiOutlineCheckCircle, HiOutlineExclamation } from 'react-icons/hi'
+import API from '../api'
+import { HiOutlineUpload, HiOutlineTrash, HiOutlineDocumentText, HiOutlineCheckCircle, HiOutlineExclamation, HiOutlinePlus, HiOutlineUsers } from 'react-icons/hi'
 
 export default function StudentsPage() {
     const [students, setStudents] = useState([])
@@ -10,12 +10,33 @@ export default function StudentsPage() {
     const [dragActive, setDragActive] = useState(false)
     const fileRef = useRef()
 
+    // Single student form
+    const [showSingleForm, setShowSingleForm] = useState(false)
+    const [singleStudent, setSingleStudent] = useState({ student_id: '', name: '', subject_code: '' })
+    const [singleError, setSingleError] = useState('')
+    const [singleSuccess, setSingleSuccess] = useState('')
+
     const fetchStudents = () => {
         setLoading(true)
         API.get('/students').then(r => setStudents(r.data)).catch(() => { }).finally(() => setLoading(false))
     }
 
     useEffect(() => { fetchStudents() }, [])
+
+    const handleAddSingle = async (e) => {
+        e.preventDefault()
+        setSingleError('')
+        setSingleSuccess('')
+        try {
+            await API.post('/students', singleStudent)
+            setSingleSuccess(`Added ${singleStudent.name} successfully!`)
+            setSingleStudent({ student_id: '', name: '', subject_code: '' })
+            fetchStudents()
+            setTimeout(() => setSingleSuccess(''), 3000)
+        } catch (err) {
+            setSingleError(err.response?.data?.error || 'Failed to add student')
+        }
+    }
 
     const handleUpload = async (file) => {
         if (!file) return
@@ -55,12 +76,44 @@ export default function StudentsPage() {
                     <h1 className="page-title">Students</h1>
                     <p className="text-dark-400 mt-1">Upload and manage student data</p>
                 </div>
-                {students.length > 0 && (
-                    <button onClick={handleClear} className="btn-danger flex items-center gap-2 text-sm">
-                        <HiOutlineTrash className="w-4 h-4" /> Clear All ({students.length})
+                <div className="flex items-center gap-3">
+                    <button onClick={() => setShowSingleForm(!showSingleForm)} className="btn-primary flex items-center gap-2 text-sm">
+                        <HiOutlinePlus className="w-4 h-4" /> Add Single Student
                     </button>
-                )}
+                    {students.length > 0 && (
+                        <button onClick={handleClear} className="btn-danger flex items-center gap-2 text-sm">
+                            <HiOutlineTrash className="w-4 h-4" /> Clear All ({students.length})
+                        </button>
+                    )}
+                </div>
             </div>
+
+            {/* Add Single Form */}
+            {showSingleForm && (
+                <div className="glass-card p-6 animate-slide-up">
+                    <h3 className="text-lg font-semibold text-white mb-4">Add Student Manually</h3>
+                    {singleError && <p className="text-red-400 text-sm mb-4 p-3 bg-red-500/10 rounded-xl">{singleError}</p>}
+                    {singleSuccess && <p className="text-emerald-400 text-sm mb-4 p-3 bg-emerald-500/10 rounded-xl">{singleSuccess}</p>}
+                    <form onSubmit={handleAddSingle} className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label className="block text-sm text-dark-400 mb-1">Student ID</label>
+                            <input value={singleStudent.student_id} onChange={e => setSingleStudent({ ...singleStudent, student_id: e.target.value })} className="input-field" placeholder="e.g. 21CS001" required />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-dark-400 mb-1">Name</label>
+                            <input value={singleStudent.name} onChange={e => setSingleStudent({ ...singleStudent, name: e.target.value })} className="input-field" placeholder="e.g. John Doe" required />
+                        </div>
+                        <div>
+                            <label className="block text-sm text-dark-400 mb-1">Subject Code</label>
+                            <input value={singleStudent.subject_code} onChange={e => setSingleStudent({ ...singleStudent, subject_code: e.target.value })} className="input-field" placeholder="e.g. CS101" required />
+                        </div>
+                        <div className="flex items-end gap-2">
+                            <button type="submit" className="btn-primary flex-1">Add</button>
+                            <button type="button" onClick={() => setShowSingleForm(false)} className="btn-ghost">Cancel</button>
+                        </div>
+                    </form>
+                </div>
+            )}
 
             {/* Upload Zone */}
             <div
@@ -79,7 +132,7 @@ export default function StudentsPage() {
                         </div>
                     )}
                     <div>
-                        <p className="text-lg font-semibold text-white">{uploading ? 'Uploading...' : 'Drop CSV file here or click to browse'}</p>
+                        <p className="text-lg font-semibold text-white">{uploading ? 'Uploading...' : 'Drop CSV file here or click to bulk upload'}</p>
                         <p className="text-sm text-dark-400 mt-1">Format: StudentID, StudentName, SubjectCode</p>
                     </div>
                 </div>

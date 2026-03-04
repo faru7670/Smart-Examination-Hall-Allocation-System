@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { API } from '../context/AuthContext'
+import API from '../api'
 import { HiOutlineSearch, HiOutlineLocationMarker } from 'react-icons/hi'
 
 export default function SearchPage() {
