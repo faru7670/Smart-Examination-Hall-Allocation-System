@@ -1,0 +1,14 @@
+{
+    "name": "smart-examination-hall-allocation-system",
+    "version": "1.0.0",
+    "description": "Smart Examination Hall Allocation System",
+    "scripts": {
+        "install:all": "cd server && npm install && cd ../client && npm install",
+        "build:client": "cd client && npm run build",
+        "start": "cd server && node server.js",
+        "dev:server": "cd server && node server.js",
+        "dev:client": "cd client && npx vite",
+        "build": "npm run install:all && npm run build:client",
+        "render-build": "cd server && npm install && cd ../client && npm install && npm run build"
+    }
+}
