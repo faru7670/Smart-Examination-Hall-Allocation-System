@@ -5,7 +5,7 @@ const API = axios.create({ baseURL: '/api' });
 
 // Add Firebase token to all requests
 API.interceptors.request.use(async (config) => {
-    if (auth.currentUser) {
+    if (auth && auth.currentUser) {
         const token = await auth.currentUser.getIdToken();
         config.headers.Authorization = `Bearer ${token}`;
     }
@@ -13,3 +13,4 @@ API.interceptors.request.use(async (config) => {
 });
 
 export default API;
+

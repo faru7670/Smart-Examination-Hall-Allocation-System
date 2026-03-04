@@ -12,23 +12,21 @@ app.use(express.urlencoded({ extended: true }));
 // Import Firebase config just to ensure it initializes on startup
 require('./config/firebase');
 
-async function startServer() {
-    console.log('Firebase initialized. Starting server...');
+app.use('/api/auth', require('./routes/auth'));
+app.use('/api/students', require('./routes/students'));
+app.use('/api/halls', require('./routes/halls'));
+app.use('/api/allocations', require('./routes/allocation'));
+app.use('/api/allocate', require('./routes/allocation'));
+app.use('/api/analytics', require('./routes/analytics'));
+app.use('/api/export', require('./routes/export').router);
+app.use('/api/qrcode', require('./routes/qrcode'));
 
-    app.use('/api/auth', require('./routes/auth'));
-    app.use('/api/students', require('./routes/students'));
-    app.use('/api/halls', require('./routes/halls'));
-    app.use('/api/allocations', require('./routes/allocation'));
-    app.use('/api/allocate', require('./routes/allocation'));
-    app.use('/api/analytics', require('./routes/analytics'));
-    app.use('/api/export', require('./routes/export').router);
-    app.use('/api/qrcode', require('./routes/qrcode'));
+app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
-    app.get('/api/health', (req, res) => {
-        res.json({ status: 'ok', timestamp: new Date().toISOString() });
-    });
-
-    // Serve React build in production
+// Serve React build in production (only when not running as Vercel serverless)
+if (require.main === module) {
     const clientBuild = path.join(__dirname, '..', 'client', 'dist');
     app.use(express.static(clientBuild));
     app.get('*', (req, res) => {
@@ -40,7 +38,5 @@ async function startServer() {
     });
 }
 
-startServer().catch(err => {
-    console.error('Failed to start server:', err);
-    process.exit(1);
-});
+module.exports = app;
+

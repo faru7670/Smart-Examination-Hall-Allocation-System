@@ -5,16 +5,20 @@ import { onAuthStateChanged, signInWithEmailAndPassword, signOut, createUserWith
 
 const AuthContext = createContext(null);
 
-
 export function AuthProvider({ children }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        // If Firebase is not configured, skip auth initialization
+        if (!auth) {
+            setLoading(false);
+            return;
+        }
+
         const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
             if (firebaseUser) {
                 try {
-                    // Get custom claims or user profile from our backend
                     const token = await firebaseUser.getIdToken();
                     const res = await axios.get('/api/auth/me', {
                         headers: { Authorization: `Bearer ${token}` }
@@ -22,7 +26,7 @@ export function AuthProvider({ children }) {
                     setUser({ ...firebaseUser, ...res.data.user });
                 } catch (err) {
                     console.error("Failed to fetch user profile", err);
-                    setUser(firebaseUser); // fallback
+                    setUser(firebaseUser);
                 }
             } else {
                 setUser(null);
@@ -33,20 +37,18 @@ export function AuthProvider({ children }) {
     }, []);
 
     const login = async (email, password) => {
+        if (!auth) throw new Error('Firebase is not configured. Please set up your .env file.');
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         return userCredential.user;
     };
 
     const registerCollege = async (email, password, collegeName) => {
+        if (!auth) throw new Error('Firebase is not configured. Please set up your .env file.');
         const userCredential = await createUserWithEmailAndPassword(auth, email, password);
         const token = await userCredential.user.getIdToken();
-
-        // Setup backend profile
         await axios.post('/api/auth/setup-college', { collegeName }, {
             headers: { Authorization: `Bearer ${token}` }
         });
-
-        // Refresh profile state
         const res = await axios.get('/api/auth/me', {
             headers: { Authorization: `Bearer ${token}` }
         });
@@ -55,6 +57,7 @@ export function AuthProvider({ children }) {
     };
 
     const logoutUser = () => {
+        if (!auth) return Promise.resolve();
         return signOut(auth);
     };
 
