@@ -1,53 +1,54 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
-import API from '../api'
+import { useAuth } from '../context/AuthContext'
+import { getAllocations } from '../lib/db'
 import { HiOutlineDocumentDownload, HiOutlineTable, HiOutlineDocumentText } from 'react-icons/hi'
+import jsPDF from 'jspdf'
+import autoTable from 'jspdf-autotable'
+import Papa from 'papaparse'
 
-export default function ReportsPage({ isPublic = false }) {
+export default function ReportsPage() {
+    const { user } = useAuth()
     const [allocations, setAllocations] = useState([])
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        const fetchAllocs = async () => {
-            try {
-                const r = isPublic ? await axios.get('/api/allocations') : await API.get('/allocations')
-                setAllocations(Array.isArray(r.data) ? r.data : [])
-            } catch (err) { }
-            setLoading(false)
-        }
-        fetchAllocs()
-    }, [isPublic])
+        if (!user?.collegeId) return
+        getAllocations(user.collegeId).then(data => setAllocations(Array.isArray(data) ? data : [])).catch(() => { }).finally(() => setLoading(false))
+    }, [user?.collegeId])
 
-    const handleDownloadCSV = async () => {
-        try {
-            const url = isPublic ? '/api/export/csv' : 'http://localhost:5000/api/export/csv'
-            const r = isPublic
-                ? await axios.get(url, { responseType: 'blob' })
-                : await API.get('/export/csv', { responseType: 'blob' })
-            const objectUrl = window.URL.createObjectURL(new Blob([r.data]))
-            const link = document.createElement('a')
-            link.href = objectUrl
-            link.setAttribute('download', 'seat_allocation.csv')
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
-        } catch (e) { alert('Failed to download CSV') }
+    const handleDownloadCSV = () => {
+        if (allocations.length === 0) return
+        const csv = Papa.unparse(allocations.map(a => ({
+            'Student ID': a.student_id,
+            'Name': a.student_name,
+            'Subject': a.subject_code,
+            'Hall': a.hall_name,
+            'Row': a.row_num,
+            'Col': a.col_num,
+        })))
+        const blob = new Blob([csv], { type: 'text/csv' })
+        const url = URL.createObjectURL(blob)
+        const link = document.createElement('a')
+        link.href = url; link.download = 'seat_allocation.csv'
+        document.body.appendChild(link); link.click(); link.remove()
+        URL.revokeObjectURL(url)
     }
 
-    const handleDownloadPDF = async () => {
-        try {
-            const url = isPublic ? '/api/export/pdf' : 'http://localhost:5000/api/export/pdf'
-            const r = isPublic
-                ? await axios.get(url, { responseType: 'blob' })
-                : await API.get('/export/pdf', { responseType: 'blob' })
-            const objectUrl = window.URL.createObjectURL(new Blob([r.data], { type: 'application/pdf' }))
-            const link = document.createElement('a')
-            link.href = objectUrl
-            link.setAttribute('download', 'seat_allocation.pdf')
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
-        } catch (e) { alert('Failed to download PDF') }
+    const handleDownloadPDF = () => {
+        if (allocations.length === 0) return
+        const doc = new jsPDF()
+        doc.setFontSize(16)
+        doc.text('Seat Allocation Report', 14, 15)
+        doc.setFontSize(10)
+        doc.text(`Generated: ${new Date().toLocaleString()}`, 14, 22)
+        autoTable(doc, {
+            startY: 28,
+            head: [['Student ID', 'Name', 'Subject', 'Hall', 'Seat']],
+            body: allocations.map(a => [a.student_id, a.student_name, a.subject_code, a.hall_name, `R${a.row_num}C${a.col_num}`]),
+            styles: { fontSize: 9 },
+            headStyles: { fillColor: [99, 102, 241] }
+        })
+        doc.save('seat_allocation.pdf')
     }
 
     return (
@@ -62,7 +63,7 @@ export default function ReportsPage({ isPublic = false }) {
                         <HiOutlineTable className="w-5 h-5" /> Export CSV
                     </button>
                     <button onClick={handleDownloadPDF} disabled={allocations.length === 0} className="btn-primary flex items-center gap-2">
-                        <HiOutlineDocumentDownload className="w-5 h-5" /> Download PDF Report
+                        <HiOutlineDocumentDownload className="w-5 h-5" /> Download PDF
                     </button>
                 </div>
             </div>
@@ -73,7 +74,7 @@ export default function ReportsPage({ isPublic = false }) {
                 <div className="glass-card overflow-hidden animate-slide-up">
                     <div className="p-4 border-b border-dark-700/50 flex items-center gap-3">
                         <HiOutlineDocumentText className="w-5 h-5 text-primary-400" />
-                        <span className="font-semibold">{allocations.length} Allocated Seats (Preview)</span>
+                        <span className="font-semibold">{allocations.length} Allocated Seats</span>
                     </div>
                     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                         <table className="w-full text-sm">
@@ -94,9 +95,7 @@ export default function ReportsPage({ isPublic = false }) {
                                         <td className="px-6 py-3"><span className="badge bg-primary-500/20 text-primary-300">{a.subject_code}</span></td>
                                         <td className="px-6 py-3 text-white">{a.hall_name}</td>
                                         <td className="px-6 py-3 text-center">
-                                            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-dark-800 border border-dark-600 font-mono text-xs text-dark-300 shadow-inner">
-                                                R{a.row_num}C{a.col_num}
-                                            </span>
+                                            <span className="inline-flex items-center justify-center w-14 h-8 rounded-lg bg-dark-800 border border-dark-600 font-mono text-xs text-dark-300">R{a.row_num}C{a.col_num}</span>
                                         </td>
                                     </tr>
                                 ))}
@@ -104,7 +103,7 @@ export default function ReportsPage({ isPublic = false }) {
                         </table>
                         {allocations.length > 100 && (
                             <div className="p-4 text-center border-t border-dark-700/50 text-dark-400 text-sm">
-                                Showing first 100 rows. Download full report for all records.
+                                Showing first 100. Download full report for all records.
                             </div>
                         )}
                     </div>

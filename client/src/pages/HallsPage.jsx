@@ -1,42 +1,37 @@
 import { useState, useEffect } from 'react'
-import API from '../api'
+import { useAuth } from '../context/AuthContext'
+import { getHalls, addHall, deleteHall } from '../lib/db'
 import { HiOutlinePlus, HiOutlineTrash, HiOutlineOfficeBuilding } from 'react-icons/hi'
 
 export default function HallsPage() {
+    const { user } = useAuth()
     const [halls, setHalls] = useState([])
     const [loading, setLoading] = useState(true)
     const [showForm, setShowForm] = useState(false)
     const [form, setForm] = useState({ name: '', rows: '', cols: '' })
     const [error, setError] = useState('')
 
-    const fetchHalls = () => {
+    const fetchHalls = async () => {
+        if (!user?.collegeId) return
         setLoading(true)
-        API.get('/halls').then(r => setHalls(Array.isArray(r.data) ? r.data : [])).catch(() => { }).finally(() => setLoading(false))
+        try { setHalls(await getHalls(user.collegeId)) } catch { setHalls([]) }
+        setLoading(false)
     }
 
-    useEffect(() => { fetchHalls() }, [])
+    useEffect(() => { fetchHalls() }, [user?.collegeId])
 
     const handleAdd = async (e) => {
-        e.preventDefault()
-        setError('')
+        e.preventDefault(); setError('')
         try {
-            await API.post('/halls', { name: form.name, rows: Number(form.rows), cols: Number(form.cols) })
-            setForm({ name: '', rows: '', cols: '' })
-            setShowForm(false)
-            fetchHalls()
-        } catch (err) {
-            setError(err.response?.data?.error || 'Failed to add hall')
-        }
+            await addHall(user.collegeId, { name: form.name, rows: Number(form.rows), cols: Number(form.cols) })
+            setForm({ name: '', rows: '', cols: '' }); setShowForm(false); fetchHalls()
+        } catch (err) { setError(err.message || 'Failed to add hall') }
     }
 
     const handleDelete = async (id, name) => {
         if (!confirm(`Delete "${name}"? This also removes its allocations.`)) return
-        try {
-            await API.delete(`/halls/${id}`)
-            fetchHalls()
-        } catch (err) {
-            alert(err.response?.data?.error || 'Failed')
-        }
+        try { await deleteHall(user.collegeId, id); fetchHalls() }
+        catch (err) { alert(err.message || 'Failed') }
     }
 
     return (
@@ -51,7 +46,6 @@ export default function HallsPage() {
                 </button>
             </div>
 
-            {/* Add Hall Form */}
             {showForm && (
                 <div className="glass-card p-6 animate-slide-up">
                     <h3 className="text-lg font-semibold text-white mb-4">New Hall</h3>
@@ -59,15 +53,15 @@ export default function HallsPage() {
                     <form onSubmit={handleAdd} className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div>
                             <label className="block text-sm text-dark-400 mb-1">Hall Name</label>
-                            <input id="hall-name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="input-field" placeholder="e.g. Hall A" required />
+                            <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className="input-field" placeholder="e.g. Hall A" required />
                         </div>
                         <div>
                             <label className="block text-sm text-dark-400 mb-1">Rows</label>
-                            <input id="hall-rows" type="number" min="1" max="100" value={form.rows} onChange={e => setForm({ ...form, rows: e.target.value })} className="input-field" placeholder="10" required />
+                            <input type="number" min="1" max="100" value={form.rows} onChange={e => setForm({ ...form, rows: e.target.value })} className="input-field" placeholder="10" required />
                         </div>
                         <div>
                             <label className="block text-sm text-dark-400 mb-1">Columns</label>
-                            <input id="hall-cols" type="number" min="1" max="100" value={form.cols} onChange={e => setForm({ ...form, cols: e.target.value })} className="input-field" placeholder="10" required />
+                            <input type="number" min="1" max="100" value={form.cols} onChange={e => setForm({ ...form, cols: e.target.value })} className="input-field" placeholder="10" required />
                         </div>
                         <div className="flex items-end gap-2">
                             <button type="submit" className="btn-primary flex-1">Add</button>
@@ -75,14 +69,11 @@ export default function HallsPage() {
                         </div>
                     </form>
                     {form.rows && form.cols && (
-                        <p className="mt-3 text-sm text-dark-400">
-                            Capacity: <span className="text-primary-400 font-semibold">{(Number(form.rows) || 0) * (Number(form.cols) || 0)} seats</span>
-                        </p>
+                        <p className="mt-3 text-sm text-dark-400">Capacity: <span className="text-primary-400 font-semibold">{(Number(form.rows) || 0) * (Number(form.cols) || 0)} seats</span></p>
                     )}
                 </div>
             )}
 
-            {/* Hall Cards */}
             {loading ? (
                 <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
             ) : halls.length > 0 ? (
@@ -107,7 +98,6 @@ export default function HallsPage() {
                                 <span className="text-sm text-dark-400">Total Capacity</span>
                                 <span className="text-2xl font-bold text-primary-400">{hall.capacity}</span>
                             </div>
-                            {/* Mini grid preview */}
                             <div className="mt-4 grid gap-0.5" style={{ gridTemplateColumns: `repeat(${Math.min(hall.cols, 10)}, 1fr)` }}>
                                 {Array.from({ length: Math.min(hall.rows * hall.cols, 100) }).map((_, j) => (
                                     <div key={j} className="aspect-square bg-dark-700/50 rounded-sm" />

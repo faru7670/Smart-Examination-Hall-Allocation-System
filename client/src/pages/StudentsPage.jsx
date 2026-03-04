@@ -1,8 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
-import API from '../api'
+import { useAuth } from '../context/AuthContext'
+import { getStudents, addStudent, uploadStudents, clearStudents } from '../lib/db'
 import { HiOutlineUpload, HiOutlineTrash, HiOutlineDocumentText, HiOutlineCheckCircle, HiOutlineExclamation, HiOutlinePlus, HiOutlineUsers } from 'react-icons/hi'
+import Papa from 'papaparse'
 
 export default function StudentsPage() {
+    const { user } = useAuth()
     const [students, setStudents] = useState([])
     const [loading, setLoading] = useState(true)
     const [uploading, setUploading] = useState(false)
@@ -10,60 +13,59 @@ export default function StudentsPage() {
     const [dragActive, setDragActive] = useState(false)
     const fileRef = useRef()
 
-    // Single student form
     const [showSingleForm, setShowSingleForm] = useState(false)
     const [singleStudent, setSingleStudent] = useState({ student_id: '', name: '', subject_code: '' })
     const [singleError, setSingleError] = useState('')
     const [singleSuccess, setSingleSuccess] = useState('')
 
-    const fetchStudents = () => {
+    const fetchStudents = async () => {
+        if (!user?.collegeId) return
         setLoading(true)
-        API.get('/students').then(r => setStudents(Array.isArray(r.data) ? r.data : [])).catch(() => { }).finally(() => setLoading(false))
+        try { setStudents(await getStudents(user.collegeId)) } catch { setStudents([]) }
+        setLoading(false)
     }
 
-    useEffect(() => { fetchStudents() }, [])
+    useEffect(() => { fetchStudents() }, [user?.collegeId])
 
     const handleAddSingle = async (e) => {
         e.preventDefault()
-        setSingleError('')
-        setSingleSuccess('')
+        setSingleError(''); setSingleSuccess('')
         try {
-            await API.post('/students', singleStudent)
+            await addStudent(user.collegeId, singleStudent)
             setSingleSuccess(`Added ${singleStudent.name} successfully!`)
             setSingleStudent({ student_id: '', name: '', subject_code: '' })
             fetchStudents()
             setTimeout(() => setSingleSuccess(''), 3000)
-        } catch (err) {
-            setSingleError(err.response?.data?.error || 'Failed to add student')
-        }
+        } catch (err) { setSingleError(err.message || 'Failed to add student') }
     }
 
-    const handleUpload = async (file) => {
+    const handleUpload = (file) => {
         if (!file) return
-        setUploading(true)
-        setUploadResult(null)
-        const formData = new FormData()
-        formData.append('file', file)
-        try {
-            const res = await API.post('/students/upload', formData, { headers: { 'Content-Type': 'multipart/form-data' } })
-            setUploadResult(res.data)
-            fetchStudents()
-        } catch (err) {
-            setUploadResult({ error: err.response?.data?.error || 'Upload failed' })
-        } finally {
-            setUploading(false)
-        }
+        setUploading(true); setUploadResult(null)
+        Papa.parse(file, {
+            skipEmptyLines: true,
+            complete: async (results) => {
+                try {
+                    const rows = results.data.filter((r, i) => {
+                        // Skip header row if it starts with non-numeric text
+                        if (i === 0 && isNaN(r[0])) return false
+                        return r.length >= 3
+                    })
+                    const result = await uploadStudents(user.collegeId, rows)
+                    setUploadResult({ summary: result })
+                    fetchStudents()
+                } catch (err) {
+                    setUploadResult({ error: err.message || 'Upload failed' })
+                } finally { setUploading(false) }
+            },
+            error: () => { setUploadResult({ error: 'Failed to parse CSV' }); setUploading(false) }
+        })
     }
 
     const handleClear = async () => {
         if (!confirm('Delete ALL student data? This also clears allocations.')) return
-        try {
-            await API.delete('/students')
-            fetchStudents()
-            setUploadResult(null)
-        } catch (err) {
-            alert(err.response?.data?.error || 'Failed')
-        }
+        try { await clearStudents(user.collegeId); fetchStudents(); setUploadResult(null) }
+        catch (err) { alert(err.message || 'Failed') }
     }
 
     const handleDrop = (e) => { e.preventDefault(); setDragActive(false); handleUpload(e.dataTransfer.files[0]) }
@@ -88,7 +90,6 @@ export default function StudentsPage() {
                 </div>
             </div>
 
-            {/* Add Single Form */}
             {showSingleForm && (
                 <div className="glass-card p-6 animate-slide-up">
                     <h3 className="text-lg font-semibold text-white mb-4">Add Student Manually</h3>
@@ -115,12 +116,10 @@ export default function StudentsPage() {
                 </div>
             )}
 
-            {/* Upload Zone */}
             <div
                 onDrop={handleDrop} onDragEnter={handleDrag} onDragOver={handleDrag} onDragLeave={handleDrag}
                 onClick={() => fileRef.current?.click()}
-                className={`glass-card p-12 text-center cursor-pointer transition-all duration-300 ${dragActive ? 'border-primary-500 bg-primary-500/10 scale-[1.01]' : 'hover:border-dark-500'
-                    }`}
+                className={`glass-card p-12 text-center cursor-pointer transition-all duration-300 ${dragActive ? 'border-primary-500 bg-primary-500/10 scale-[1.01]' : 'hover:border-dark-500'}`}
             >
                 <input ref={fileRef} type="file" accept=".csv" className="hidden" onChange={e => handleUpload(e.target.files[0])} />
                 <div className="flex flex-col items-center gap-4">
@@ -138,7 +137,6 @@ export default function StudentsPage() {
                 </div>
             </div>
 
-            {/* Upload Result */}
             {uploadResult && (
                 <div className={`glass-card p-6 animate-slide-up ${uploadResult.error ? 'border-red-500/50' : 'border-emerald-500/50'}`}>
                     {uploadResult.error ? (
@@ -171,7 +169,6 @@ export default function StudentsPage() {
                 </div>
             )}
 
-            {/* Student Table */}
             {loading ? (
                 <div className="flex justify-center py-12"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
             ) : students.length > 0 ? (

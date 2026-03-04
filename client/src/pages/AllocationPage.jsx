@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
-import API from '../api';
+import { getHalls, runAllocation, getHallGrid } from '../lib/db';
 import { HiOutlinePlay, HiOutlineRefresh, HiOutlineCheckCircle, HiOutlineExclamation, HiOutlineCube, HiOutlineViewGrid } from 'react-icons/hi';
 import ThreeDHall from '../components/ThreeDHall';
 
@@ -18,9 +17,8 @@ const SUBJECT_COLORS = [
     { bg: 'bg-rose-500/20', text: 'text-rose-300', border: 'border-rose-500/30', hex: '#fb7185' },
 ];
 
-export default function AllocationPage({ isPublic = false }) {
-    const auth = useAuth();
-    const user = isPublic ? null : auth?.user;
+export default function AllocationPage() {
+    const { user } = useAuth();
     const [halls, setHalls] = useState([]);
     const [selectedHall, setSelectedHall] = useState(null);
     const [gridData, setGridData] = useState(null);
@@ -31,46 +29,41 @@ export default function AllocationPage({ isPublic = false }) {
     const [selectedSeat, setSelectedSeat] = useState(null);
     const [viewMode, setViewMode] = useState('3d');
 
-    useEffect(() => { fetchHalls(); }, []);
+    useEffect(() => { if (user?.collegeId) fetchHalls(); }, [user?.collegeId]);
 
     const fetchHalls = async () => {
         setLoading(true);
         try {
-            const r = isPublic ? await axios.get('/api/halls') : await API.get('/halls');
-            const hallsData = Array.isArray(r.data) ? r.data : [];
-            setHalls(hallsData);
-            if (hallsData.length > 0) loadHallGrid(hallsData[0]);
+            const h = await getHalls(user.collegeId);
+            setHalls(h);
+            if (h.length > 0) loadHallGrid(h[0]);
         } catch (e) { console.error(e); }
         setLoading(false);
     };
 
-
     const loadHallGrid = async (hall) => {
         setSelectedHall(hall);
         try {
-            const r = isPublic ? await axios.get(`/api/allocations/hall/${hall.id}`) : await API.get(`/allocations/hall/${hall.id}`);
-            setGridData(r.data);
-
-            const subjects = new Set();
-            r.data.grid.forEach(row => row.forEach(seat => { if (!seat.empty) subjects.add(seat.subject_code); }));
-            const map = {};
-            Array.from(subjects).sort().forEach((s, i) => { map[s] = SUBJECT_COLORS[i % SUBJECT_COLORS.length]; });
-            setSubjectMap(map);
-        } catch (e) {
-            setGridData(null);
-        }
+            const data = await getHallGrid(user.collegeId, hall);
+            setGridData(data);
+            if (data) {
+                const subjects = new Set();
+                data.grid.forEach(row => row.forEach(seat => { if (!seat.empty) subjects.add(seat.subject_code); }));
+                const map = {};
+                Array.from(subjects).sort().forEach((s, i) => { map[s] = SUBJECT_COLORS[i % SUBJECT_COLORS.length]; });
+                setSubjectMap(map);
+            }
+        } catch (e) { setGridData(null); }
     };
 
     const handleAllocate = async () => {
-        setAllocating(true);
-        setResult(null);
+        setAllocating(true); setResult(null);
         try {
-            const r = await API.post('/allocate');
-            setResult(r.data);
+            const r = await runAllocation(user.collegeId);
+            setResult(r);
             if (selectedHall) loadHallGrid(selectedHall);
-        } catch (err) {
-            setResult({ error: err.response?.data?.error || 'Allocation failed' });
-        }
+            else fetchHalls();
+        } catch (err) { setResult({ error: err.message || 'Allocation failed' }); }
         setAllocating(false);
     };
 
@@ -92,10 +85,7 @@ export default function AllocationPage({ isPublic = false }) {
             {result && (
                 <div className={`glass-card p-6 animate-slide-up ${result.error ? 'border-red-500/50' : 'border-emerald-500/50'}`}>
                     {result.error ? (
-                        <div className="flex items-center gap-3 text-red-400">
-                            <HiOutlineExclamation className="w-6 h-6" />
-                            <p>{result.error}</p>
-                        </div>
+                        <div className="flex items-center gap-3 text-red-400"><HiOutlineExclamation className="w-6 h-6" /><p>{result.error}</p></div>
                     ) : (
                         <div className="flex flex-wrap items-center gap-6">
                             <div className="flex items-center gap-2 text-emerald-400"><HiOutlineCheckCircle className="w-6 h-6" /><span className="font-semibold">Allocation Complete</span></div>
@@ -112,14 +102,8 @@ export default function AllocationPage({ isPublic = false }) {
             {halls.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                     {halls.map(hall => (
-                        <button
-                            key={hall.id}
-                            onClick={() => loadHallGrid(hall)}
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${selectedHall?.id === hall.id
-                                ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30'
-                                : 'text-dark-400 hover:text-white hover:bg-dark-700/50 border border-transparent'
-                                }`}
-                        >
+                        <button key={hall.id} onClick={() => loadHallGrid(hall)}
+                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${selectedHall?.id === hall.id ? 'bg-primary-500/20 text-primary-400 border border-primary-500/30' : 'text-dark-400 hover:text-white hover:bg-dark-700/50 border border-transparent'}`}>
                             {hall.name} ({hall.capacity})
                         </button>
                     ))}
@@ -142,28 +126,16 @@ export default function AllocationPage({ isPublic = false }) {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                         <h3 className="text-lg font-semibold text-white">{selectedHall?.name} — {gridData.total_seated}/{selectedHall?.capacity} seats</h3>
                         <div className="flex items-center gap-2 bg-dark-800/50 p-1 rounded-lg">
-                            <button onClick={() => setViewMode('2d')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === '2d' ? 'bg-primary-500 text-white shadow-lg' : 'text-dark-400 hover:text-white'}`}>
-                                <HiOutlineViewGrid className="w-4 h-4" /> 2D
-                            </button>
-                            <button onClick={() => setViewMode('3d')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === '3d' ? 'bg-primary-500 text-white shadow-lg' : 'text-dark-400 hover:text-white'}`}>
-                                <HiOutlineCube className="w-4 h-4" /> 3D
-                            </button>
-                            <div className="w-px h-6 bg-dark-700 mx-1"></div>
-                            <button onClick={() => loadHallGrid(selectedHall)} className="p-2 text-dark-400 hover:text-white transition-colors" title="Refresh">
-                                <HiOutlineRefresh className="w-5 h-5" />
-                            </button>
+                            <button onClick={() => setViewMode('2d')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === '2d' ? 'bg-primary-500 text-white shadow-lg' : 'text-dark-400 hover:text-white'}`}><HiOutlineViewGrid className="w-4 h-4" /> 2D</button>
+                            <button onClick={() => setViewMode('3d')} className={`flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors ${viewMode === '3d' ? 'bg-primary-500 text-white shadow-lg' : 'text-dark-400 hover:text-white'}`}><HiOutlineCube className="w-4 h-4" /> 3D</button>
+                            <div className="w-px h-6 bg-dark-700 mx-1" />
+                            <button onClick={() => loadHallGrid(selectedHall)} className="p-2 text-dark-400 hover:text-white transition-colors"><HiOutlineRefresh className="w-5 h-5" /></button>
                         </div>
                     </div>
 
                     {viewMode === '3d' ? (
                         <div className="w-full h-[500px] rounded-xl overflow-hidden shadow-inner border border-dark-700/50">
-                            <ThreeDHall
-                                hall={selectedHall}
-                                gridData={gridData.grid}
-                                subjectMap={subjectMap}
-                                onSeatClick={setSelectedSeat}
-                                height="100%"
-                            />
+                            <ThreeDHall hall={selectedHall} gridData={gridData.grid} subjectMap={subjectMap} onSeatClick={setSelectedSeat} height="100%" />
                         </div>
                     ) : (
                         <div className="overflow-x-auto pb-4">
@@ -173,21 +145,14 @@ export default function AllocationPage({ isPublic = false }) {
                                         <div key={c} className="w-20 text-center text-xs text-dark-500">C{c + 1}</div>
                                     ))}
                                 </div>
-
                                 {gridData.grid.map((row, ri) => (
                                     <div key={ri} className="flex gap-1 mb-1">
                                         <div className="w-9 flex items-center justify-center text-xs text-dark-500 flex-shrink-0">R{ri + 1}</div>
                                         {row.map((seat, ci) => {
                                             const color = seat.empty ? null : subjectMap[seat.subject_code];
                                             return (
-                                                <div
-                                                    key={ci}
-                                                    onClick={() => !seat.empty && setSelectedSeat(seat)}
-                                                    className={`w-20 h-14 rounded-lg flex flex-col items-center justify-center text-xs transition-all cursor-pointer ${seat.empty
-                                                        ? 'bg-dark-800/30 border border-dark-700/30'
-                                                        : `${color?.bg || 'bg-dark-700'} border ${color?.border || 'border-dark-600'} hover:scale-105 hover:shadow-lg`
-                                                        }`}
-                                                >
+                                                <div key={ci} onClick={() => !seat.empty && setSelectedSeat(seat)}
+                                                    className={`w-20 h-14 rounded-lg flex flex-col items-center justify-center text-xs transition-all cursor-pointer ${seat.empty ? 'bg-dark-800/30 border border-dark-700/30' : `${color?.bg || 'bg-dark-700'} border ${color?.border || 'border-dark-600'} hover:scale-105 hover:shadow-lg`}`}>
                                                     {!seat.empty && (
                                                         <>
                                                             <span className={`font-semibold ${color?.text || 'text-white'} text-[10px] truncate w-full text-center px-1`}>{seat.student_id}</span>
@@ -206,9 +171,7 @@ export default function AllocationPage({ isPublic = false }) {
             ) : loading ? (
                 <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" /></div>
             ) : (
-                <div className="glass-card p-12 text-center text-dark-400">
-                    <p>No halls available. Add halls first.</p>
-                </div>
+                <div className="glass-card p-12 text-center text-dark-400"><p>No halls available. Add halls first.</p></div>
             )}
 
             {selectedSeat && (

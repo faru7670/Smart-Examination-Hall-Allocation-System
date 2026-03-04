@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -11,10 +12,13 @@ const firebaseConfig = {
 };
 
 let auth = null;
+let db = null;
+
 try {
     if (firebaseConfig.apiKey && firebaseConfig.projectId) {
         const app = initializeApp(firebaseConfig);
         auth = getAuth(app);
+        db = getFirestore(app);
     } else {
         console.warn('Firebase config missing. Set VITE_FIREBASE_* env variables in client/.env');
     }
@@ -22,4 +26,4 @@ try {
     console.error('Firebase initialization failed:', err.message);
 }
 
-export { auth };
+export { auth, db };

@@ -1,8 +1,10 @@
 import { useState } from 'react'
-import API from '../api'
+import { useAuth } from '../context/AuthContext'
+import { searchAllocations } from '../lib/db'
 import { HiOutlineSearch, HiOutlineLocationMarker } from 'react-icons/hi'
 
 export default function SearchPage() {
+    const { user } = useAuth()
     const [query, setQuery] = useState('')
     const [results, setResults] = useState([])
     const [searched, setSearched] = useState(false)
@@ -10,14 +12,12 @@ export default function SearchPage() {
 
     const handleSearch = async (e) => {
         e?.preventDefault()
-        if (!query.trim()) return
+        if (!query.trim() || !user?.collegeId) return
         setLoading(true)
         try {
-            const r = await API.get(`/allocations/search?q=${encodeURIComponent(query.trim())}`)
-            setResults(r.data)
-        } catch (e) {
-            setResults([])
-        }
+            const r = await searchAllocations(user.collegeId, query.trim())
+            setResults(Array.isArray(r) ? r : [])
+        } catch { setResults([]) }
         setSearched(true)
         setLoading(false)
     }
@@ -34,7 +34,6 @@ export default function SearchPage() {
                     <div className="relative flex-1">
                         <HiOutlineSearch className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-400" />
                         <input
-                            id="search-input"
                             value={query}
                             onChange={e => setQuery(e.target.value)}
                             className="input-field pl-12"
@@ -59,22 +58,10 @@ export default function SearchPage() {
                                         <HiOutlineLocationMarker className="w-6 h-6 text-primary-400" />
                                     </div>
                                     <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <div>
-                                            <p className="text-xs text-dark-400">Student ID</p>
-                                            <p className="text-white font-mono font-semibold">{r.student_id}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-dark-400">Name</p>
-                                            <p className="text-white">{r.student_name}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-dark-400">Subject</p>
-                                            <p className="text-primary-400">{r.subject_code}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-dark-400">Seat</p>
-                                            <p className="text-white">{r.hall_name} — Row {r.row_num}, Col {r.col_num}</p>
-                                        </div>
+                                        <div><p className="text-xs text-dark-400">Student ID</p><p className="text-white font-mono font-semibold">{r.student_id}</p></div>
+                                        <div><p className="text-xs text-dark-400">Name</p><p className="text-white">{r.student_name}</p></div>
+                                        <div><p className="text-xs text-dark-400">Subject</p><p className="text-primary-400">{r.subject_code}</p></div>
+                                        <div><p className="text-xs text-dark-400">Seat</p><p className="text-white">{r.hall_name} — Row {r.row_num}, Col {r.col_num}</p></div>
                                     </div>
                                 </div>
                             </div>
