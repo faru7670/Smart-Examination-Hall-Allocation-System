@@ -5,10 +5,27 @@
     "scripts": {
         "install:all": "cd server && npm install && cd ../client && npm install",
         "build:client": "cd client && npm run build",
-        "start": "cd server && node server.js",
-        "dev:server": "cd server && node server.js",
+        "start": "node server/server.js",
+        "dev:server": "node server/server.js",
         "dev:client": "cd client && npx vite",
-        "build": "npm run install:all && npm run build:client",
-        "render-build": "cd server && npm install && cd ../client && npm install && npm run build"
+        "build": "cd client && npm install && npm run build",
+        "render-build": "cd server && npm install && cd ../client && npm install && npm run build",
+        "vercel-build": "cd client && npm install && npm run build"
+    },
+    "dependencies": {
+        "bcryptjs": "^2.4.3",
+        "cors": "^2.8.5",
+        "csv-parse": "^5.5.0",
+        "express": "^4.18.2",
+        "firebase-admin": "^13.7.0",
+        "jsonwebtoken": "^9.0.2",
+        "multer": "^1.4.5-lts.1",
+        "nodemailer": "^8.0.1",
+        "pdf-parse": "^2.4.5",
+        "pdfkit": "^0.15.0",
+        "qrcode": "^1.5.3",
+        "sql.js": "^1.10.0",
+        "uuid": "^9.0.0",
+        "xlsx": "^0.18.5"
     }
 }
