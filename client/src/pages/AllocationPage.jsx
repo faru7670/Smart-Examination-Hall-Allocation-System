@@ -19,7 +19,8 @@ const SUBJECT_COLORS = [
 ];
 
 export default function AllocationPage({ isPublic = false }) {
-    const { user } = isPublic ? { user: null } : useAuth();
+    const auth = useAuth();
+    const user = isPublic ? null : auth?.user;
     const [halls, setHalls] = useState([]);
     const [selectedHall, setSelectedHall] = useState(null);
     const [gridData, setGridData] = useState(null);
@@ -36,11 +37,13 @@ export default function AllocationPage({ isPublic = false }) {
         setLoading(true);
         try {
             const r = isPublic ? await axios.get('/api/halls') : await API.get('/halls');
-            setHalls(r.data);
-            if (r.data.length > 0) loadHallGrid(r.data[0]);
+            const hallsData = Array.isArray(r.data) ? r.data : [];
+            setHalls(hallsData);
+            if (hallsData.length > 0) loadHallGrid(hallsData[0]);
         } catch (e) { console.error(e); }
         setLoading(false);
     };
+
 
     const loadHallGrid = async (hall) => {
         setSelectedHall(hall);

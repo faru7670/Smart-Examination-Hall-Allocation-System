@@ -11,7 +11,7 @@ export default function HallsPage() {
 
     const fetchHalls = () => {
         setLoading(true)
-        API.get('/halls').then(r => setHalls(r.data)).catch(() => { }).finally(() => setLoading(false))
+        API.get('/halls').then(r => setHalls(Array.isArray(r.data) ? r.data : [])).catch(() => { }).finally(() => setLoading(false))
     }
 
     useEffect(() => { fetchHalls() }, [])

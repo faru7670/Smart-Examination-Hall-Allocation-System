@@ -11,7 +11,7 @@ export default function ReportsPage({ isPublic = false }) {
         const fetchAllocs = async () => {
             try {
                 const r = isPublic ? await axios.get('/api/allocations') : await API.get('/allocations')
-                setAllocations(r.data)
+                setAllocations(Array.isArray(r.data) ? r.data : [])
             } catch (err) { }
             setLoading(false)
         }

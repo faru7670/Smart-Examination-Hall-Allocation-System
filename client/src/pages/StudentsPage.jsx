@@ -18,7 +18,7 @@ export default function StudentsPage() {
 
     const fetchStudents = () => {
         setLoading(true)
-        API.get('/students').then(r => setStudents(r.data)).catch(() => { }).finally(() => setLoading(false))
+        API.get('/students').then(r => setStudents(Array.isArray(r.data) ? r.data : [])).catch(() => { }).finally(() => setLoading(false))
     }
 
     useEffect(() => { fetchStudents() }, [])
