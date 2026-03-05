@@ -32,8 +32,29 @@ html.dark {
   font-family: 'Inter', sans-serif;
 }
 
+@keyframes floatBg {
+  0% {
+    background-position: 0% 0%;
+  }
+
+  50% {
+    background-position: 100% 100%;
+  }
+
+  100% {
+    background-position: 0% 0%;
+  }
+}
+
 body {
-  background-color: var(--bg-primary);
+  background-color: #ffffff;
+  background-image:
+    radial-gradient(circle at 15% 50%, rgba(192, 132, 252, 0.15), transparent 30%),
+    radial-gradient(circle at 85% 30%, rgba(129, 140, 248, 0.15), transparent 30%),
+    radial-gradient(circle at 50% 80%, rgba(52, 211, 153, 0.15), transparent 30%);
+  background-size: 150% 150%;
+  animation: floatBg 20s ease infinite;
+  background-attachment: fixed;
   color: var(--text-primary);
   transition: background-color 0.3s, color 0.3s;
 }

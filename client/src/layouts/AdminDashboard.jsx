@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useTheme } from '../context/ThemeContext'
 import { getStudents } from '../lib/db'
+import { doc, updateDoc } from 'firebase/firestore'
+import { db } from '../firebase'
+import { useToast } from '../context/ToastContext'
 
 // Admin Pages
 import DashboardPage from '../pages/DashboardPage'
@@ -22,9 +25,10 @@ const TABS = [
 ]
 
 export default function AdminDashboard() {
-    const { userData, logout } = useAuth()
+    const { userData, currentUser, logout } = useAuth()
     const { theme } = useTheme()
     const navigate = useNavigate()
+    const toast = useToast()
 
     const [tab, setTab] = useState('dashboard')
     const [studentCount, setStudentCount] = useState(0)
@@ -38,6 +42,24 @@ export default function AdminDashboard() {
     const handleLogout = async () => {
         await logout()
         navigate('/')
+    }
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+        if (file.size > 2 * 1024 * 1024) return toast.error("Image must be less than 2MB")
+        const reader = new FileReader()
+        reader.onloadend = async () => {
+            try {
+                await updateDoc(doc(db, 'users', currentUser.uid), {
+                    profileUrl: reader.result
+                })
+                toast.success("Profile photo updated!")
+            } catch (err) {
+                toast.error("Failed to upload photo.")
+            }
+        }
+        reader.readAsDataURL(file)
     }
 
     if (!userData?.collegeCode) return <div className="p-8 text-center text-red-500">Error loading Admin Context</div>
@@ -71,11 +93,15 @@ export default function AdminDashboard() {
 
                     <div className="flex items-center gap-5 py-4 pl-4 border-l border-slate-200 ml-2 hidden sm:flex">
                         <div className="flex items-center gap-3">
-                            {userData.profileUrl ? (
-                                <img src={userData.profileUrl} alt="Avatar" className="w-8 h-8 rounded-full border border-slate-300 object-cover" />
-                            ) : (
-                                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs border border-slate-300">{userData.name?.[0]?.toUpperCase()}</div>
-                            )}
+                            <label className="cursor-pointer relative group flex items-center justify-center">
+                                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} />
+                                {userData.profileUrl ? (
+                                    <img src={userData.profileUrl} alt="Avatar" className="w-9 h-9 rounded-full border-2 border-indigo-200 object-cover shadow-sm group-hover:blur-[2px] transition-all" />
+                                ) : (
+                                    <div className="w-9 h-9 rounded-full bg-indigo-50 text-indigo-500 flex items-center justify-center font-black text-xs border-2 border-indigo-200 shadow-sm group-hover:blur-[2px] transition-all">{userData.name?.[0]?.toUpperCase()}</div>
+                                )}
+                                <div className="absolute inset-0 bg-slate-900/60 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity text-[8px] text-white font-black text-center leading-tight uppercase tracking-widest">Edit<br />Pic</div>
+                            </label>
                             <div className="text-right flex flex-col justify-center">
                                 <span className="text-sm font-bold leading-none mb-1">{userData.name}</span>
                                 <span className="text-[10px] text-slate-600 uppercase tracking-wider font-bold leading-none">Admin</span>
