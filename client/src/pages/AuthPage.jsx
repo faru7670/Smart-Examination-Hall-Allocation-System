@@ -114,12 +114,12 @@ export default function AuthPage() {
                 </div>
 
                 <form onSubmit={onSubmit} className="space-y-4">
-                    {type === 'admin' && !isLogin && (
+                    {type === 'admin' && (
                         <div>
-                            <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">College Name</label>
+                            <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">Admin Name</label>
                             <input type="text" value={name} onChange={e => setName(e.target.value)} required
                                 className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
-                                placeholder="E.g., Oxford University" />
+                                placeholder="E.g., Dr. Smith" />
                         </div>
                     )}
 
