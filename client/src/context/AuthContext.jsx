@@ -15,6 +15,22 @@ export function AuthProvider({ children }) {
     const [loading, setLoading] = useState(true)
     const [userLoading, setUserLoading] = useState(true)
 
+    const fetchUserData = async (uid) => {
+        setUserLoading(true)
+        try {
+            const docSnap = await getDoc(doc(db, 'users', uid))
+            if (docSnap.exists()) {
+                setUserData(docSnap.data()) // { role: 'admin'|'invigilator', collegeCode: 'ABCDEF', name, profileUrl }
+            } else {
+                setUserData(null)
+            }
+        } catch (e) {
+            console.error("Failed to fetch user data", e)
+        } finally {
+            setUserLoading(false)
+        }
+    }
+
     useEffect(() => {
         if (!auth) {
             setLoading(false)
@@ -25,19 +41,7 @@ export function AuthProvider({ children }) {
         const unsubscribe = onAuthStateChanged(auth, async (user) => {
             setCurrentUser(user)
             if (user) {
-                setUserLoading(true)
-                try {
-                    const docSnap = await getDoc(doc(db, 'users', user.uid))
-                    if (docSnap.exists()) {
-                        setUserData(docSnap.data()) // { role: 'admin'|'invigilator', collegeCode: 'ABCDEF', name, profileUrl }
-                    } else {
-                        setUserData(null)
-                    }
-                } catch (e) {
-                    console.error("Failed to fetch user data", e)
-                } finally {
-                    setUserLoading(false)
-                }
+                await fetchUserData(user.uid)
             } else {
                 setUserData(null)
                 setUserLoading(false)
@@ -57,7 +61,8 @@ export function AuthProvider({ children }) {
         userData,   // Contains role & collegeCode
         isAuthReady: !loading && auth,
         userLoading,
-        logout
+        logout,
+        fetchUserData
     }
 
     return (

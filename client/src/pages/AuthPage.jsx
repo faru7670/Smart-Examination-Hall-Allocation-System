@@ -4,6 +4,7 @@ import { auth, db } from '../firebase'
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
 import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore'
 import { useToast } from '../context/ToastContext'
+import { useAuth } from '../context/AuthContext'
 import { ShieldCheck, Users, ArrowLeft } from 'lucide-react'
 
 // Generate random 6-char college code
@@ -13,6 +14,7 @@ export default function AuthPage() {
     const { type } = useParams() // 'admin' or 'staff'
     const navigate = useNavigate()
     const toast = useToast()
+    const { fetchUserData } = useAuth()
 
     const [isLogin, setIsLogin] = useState(true)
     const [email, setEmail] = useState('')
@@ -26,7 +28,8 @@ export default function AuthPage() {
         setLoading(true)
         try {
             if (isLogin) {
-                await signInWithEmailAndPassword(auth, email, password)
+                const cred = await signInWithEmailAndPassword(auth, email, password)
+                if (cred.user) await fetchUserData(cred.user.uid)
                 toast.success("Welcome back, Admin!")
                 navigate('/admin/dashboard')
             } else {
@@ -42,6 +45,7 @@ export default function AuthPage() {
                     createdAt: new Date().toISOString()
                 })
 
+                await fetchUserData(cred.user.uid)
                 toast.success(`Account created! Your College Code is ${code}`)
                 navigate('/admin/dashboard')
             }
