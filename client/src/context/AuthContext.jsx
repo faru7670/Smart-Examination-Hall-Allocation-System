@@ -1,7 +1,9 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { auth, db } from '../firebase'
 import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth'
-import { doc, getDoc, onSnapshot } from 'firebase/firestore'
+import { doc, getDoc, onSnapshot, setDoc } from 'firebase/firestore'
+
+// ... (skipping to the snapshot part in my actual replacement)
 
 const AuthContext = createContext()
 
@@ -49,12 +51,26 @@ export function AuthProvider({ children }) {
                     if (docSnap.exists()) {
                         setUserData(docSnap.data())
                     } else {
-                        // Document might not exist for a split second during registration, or for legacy test accounts.
-                        // We will not set null immediately if we are expecting a registration write.
-                        // However, if they truly have no doc, we retro-fit them as an admin to prevent locking them out.
-                        const fallbackData = { role: 'admin', collegeCode: Math.random().toString(36).substring(2, 8).toUpperCase(), name: 'System Admin' }
-                        setUserData(fallbackData)
-                        // We do not silently write to db here to avoid permission errors, we just assume admin.
+                        // User has no doc. This is a legacy account from before our multi-tenant upgrade.
+                        // We must create a permanent doc for them so they don't get random college codes on refresh!
+                        const code = Math.random().toString(36).substring(2, 8).toUpperCase()
+                        const legacyData = {
+                            role: 'admin',
+                            collegeCode: code,
+                            name: user.displayName || 'Legacy Admin',
+                            email: user.email,
+                            createdAt: new Date().toISOString()
+                        }
+                        // Optimistically set the data so the UI loads immediately
+                        setUserData(legacyData)
+                        // Permanently write to DB so their collegeCode stays the same forever
+                        setDoc(doc(db, 'users', user.uid), legacyData)
+                            .then(() => console.log("Legacy user migrated perfectly."))
+                            .catch(err => {
+                                console.error("Could not migrate legacy user to DB:", err)
+                                // If they get permission denied, fallback to a STATIC code rather than random
+                                setUserData({ ...legacyData, collegeCode: 'LEGACY' })
+                            })
                     }
                     setUserLoading(false)
                 }, (error) => {
