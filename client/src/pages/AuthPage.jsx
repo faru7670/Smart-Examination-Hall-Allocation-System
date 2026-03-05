@@ -29,7 +29,15 @@ export default function AuthPage() {
         try {
             if (isLogin) {
                 const cred = await signInWithEmailAndPassword(auth, email, password)
-                if (cred.user) await fetchUserData(cred.user.uid)
+
+                // Self-healing: If they log in and we detect they are a legacy admin with the dummy name,
+                // we overwrite their Firestore doc with the Name they just typed into the login box!
+                const docSnap = await getDoc(doc(db, 'users', cred.user.uid))
+                if (docSnap.exists() && docSnap.data().name === 'Legacy Admin' && name.trim() !== '') {
+                    await setDoc(doc(db, 'users', cred.user.uid), { name: name }, { merge: true })
+                }
+
+                await fetchUserData(cred.user.uid)
                 toast.success("Welcome back, Admin!")
                 navigate('/admin/dashboard')
             } else {
