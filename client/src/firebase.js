@@ -1,5 +1,6 @@
-import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp } from "firebase/app"
+import { getFirestore } from "firebase/firestore"
+import { getAuth } from "firebase/auth"
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -8,16 +9,16 @@ const firebaseConfig = {
     storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
     messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
     appId: import.meta.env.VITE_FIREBASE_APP_ID
-};
-
-let db = null;
-try {
-    if (firebaseConfig.apiKey && firebaseConfig.projectId) {
-        const app = initializeApp(firebaseConfig);
-        db = getFirestore(app);
-    }
-} catch (err) {
-    console.error('Firebase init failed:', err.message);
 }
 
-export { db };
+let app, db, auth
+
+try {
+    app = initializeApp(firebaseConfig)
+    db = getFirestore(app)
+    auth = getAuth(app)
+} catch (e) {
+    console.error("Firebase Initialization Error:", e)
+}
+
+export { db, auth }

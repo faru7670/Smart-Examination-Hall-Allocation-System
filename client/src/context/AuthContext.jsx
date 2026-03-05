@@ -1,61 +1,61 @@
-import { createContext, useContext, useEffect, useState } from 'react';
-import {
-    createUserWithEmailAndPassword,
-    signInWithEmailAndPassword,
-    signOut,
-    onAuthStateChanged
-} from 'firebase/auth';
-import { auth } from '../firebase';
-import { getUserProfile, createUserProfile } from '../lib/db';
+import { createContext, useContext, useEffect, useState } from 'react'
+import { auth, db } from '../firebase'
+import { onAuthStateChanged, signOut as firebaseSignOut } from 'firebase/auth'
+import { doc, getDoc } from 'firebase/firestore'
 
-const AuthContext = createContext(null);
-export const useAuth = () => useContext(AuthContext);
+const AuthContext = createContext()
+
+export function useAuth() {
+    return useContext(AuthContext)
+}
 
 export function AuthProvider({ children }) {
-    const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [currentUser, setCurrentUser] = useState(null)
+    const [userData, setUserData] = useState(null)
+    const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        if (!auth) { setLoading(false); return; }
-        const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-            if (firebaseUser) {
+        if (!auth) {
+            setLoading(false)
+            return
+        }
+
+        const unsubscribe = onAuthStateChanged(auth, async (user) => {
+            setCurrentUser(user)
+            if (user) {
                 try {
-                    const profile = await getUserProfile(firebaseUser.uid);
-                    setUser(profile ? { ...profile, email: firebaseUser.email } : { uid: firebaseUser.uid, email: firebaseUser.email, role: 'admin' });
-                } catch {
-                    setUser({ uid: firebaseUser.uid, email: firebaseUser.email, role: 'admin' });
+                    const docSnap = await getDoc(doc(db, 'users', user.uid))
+                    if (docSnap.exists()) {
+                        setUserData(docSnap.data()) // { role: 'admin'|'invigilator', collegeCode: 'ABCDEF', name, profileUrl }
+                    } else {
+                        setUserData(null)
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch user data", e)
                 }
             } else {
-                setUser(null);
+                setUserData(null)
             }
-            setLoading(false);
-        });
-        return unsub;
-    }, []);
+            setLoading(false)
+        })
 
-    const login = async (email, password) => {
-        if (!auth) throw new Error('Firebase not configured. Add .env file.');
-        const cred = await signInWithEmailAndPassword(auth, email, password);
-        const profile = await getUserProfile(cred.user.uid);
-        return profile;
-    };
+        return unsubscribe
+    }, [])
 
-    const registerCollege = async (email, password, collegeName) => {
-        if (!auth) throw new Error('Firebase not configured. Add .env file.');
-        const cred = await createUserWithEmailAndPassword(auth, email, password);
-        const profile = await createUserProfile(cred.user.uid, { email, collegeName });
-        return profile;
-    };
+    const logout = () => {
+        return firebaseSignOut(auth)
+    }
 
-    const logoutUser = async () => {
-        if (!auth) return;
-        await signOut(auth);
-        setUser(null);
-    };
+    const value = {
+        currentUser,
+        userData,   // Contains role & collegeCode
+        isAuthReady: !loading && auth,
+        logout
+    }
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, registerCollege, logoutUser }}>
+        <AuthContext.Provider value={value}>
             {!loading && children}
         </AuthContext.Provider>
-    );
+    )
 }

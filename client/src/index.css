@@ -5,13 +5,37 @@
 @tailwind components;
 @tailwind utilities;
 
+:root,
+.light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --border-color: #e2e8f0;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(226, 232, 240, 0.5);
+  --input-bg: #f1f5f9;
+}
+
+html.dark {
+  --bg-primary: #020617;
+  --bg-secondary: #0f172a;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: #1e293b;
+  --glass-bg: rgba(15, 23, 42, 0.8);
+  --glass-border: rgba(51, 65, 85, 0.5);
+  --input-bg: #1e293b;
+}
+
 * {
   font-family: 'Inter', sans-serif;
 }
 
 body {
-  background: #020617;
-  color: #f1f5f9;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  transition: background-color 0.3s, color 0.3s;
 }
 
 /* ── Scrollbar ───────────────────────────────────── */
@@ -21,11 +45,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: var(--bg-secondary);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #64748b;
   border-radius: 999px;
 }
 
@@ -124,9 +148,9 @@ body {
 
 /* ── Glassmorphism ───────────────────────────────── */
 .glass {
-  background: rgba(15, 23, 42, 0.8);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px);
-  border: 1px solid rgba(51, 65, 85, 0.5);
+  border: 1px solid var(--glass-border);
 }
 
 /* ── Gradient text ───────────────────────────────── */
@@ -141,7 +165,7 @@ body {
 
 /* ── Shimmer skeleton ────────────────────────────── */
 .shimmer {
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
+  background: linear-gradient(90deg, var(--input-bg) 25%, var(--border-color) 50%, var(--input-bg) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
 }

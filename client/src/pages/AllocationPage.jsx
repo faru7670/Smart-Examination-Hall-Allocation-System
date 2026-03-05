@@ -1,288 +1,314 @@
-import { useState, useEffect, useRef, Suspense } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
 import { OrbitControls, Text, Environment } from '@react-three/drei'
 import * as THREE from 'three'
-import { getHalls, runAllocation, getHallAllocation, getAllocations } from '../lib/db'
+import { getStudents, getHalls, getAllocations, saveAllocations } from '../lib/db'
+import { allocateSeats } from '../lib/allocate'
+import { useToast } from '../context/ToastContext'
+import { Play, Columns, Maximize2, X, Activity } from 'lucide-react'
 
-// ─── 3D COMPONENTS ────────────────────────────────────────────────────────────
+// --- 3D Components ---
+const SEAT_SPACING = 1.3
+const palette = ['#6366f1', '#a855f7', '#10b981', '#f59e0b', '#ec4899', '#06b6d4', '#f97316']
 
-const COLORS_HEX = ['#6366f1', '#ec4899', '#f59e0b', '#10b981', '#ef4444', '#06b6d4', '#8b5cf6', '#f97316', '#14b8a6', '#fb7185']
+function Seat3D({ position, color, occupied, data, onClick }) {
+    const meshRef = useRef()
+    const [hovered, setHover] = useState(false)
+    const targetScale = hovered ? 1.15 : 1
+    const baseColor = occupied ? color : '#1e293b'
 
-function Seat({ position, color, occupied, label, onClick, isSelected }) {
-    const mesh = useRef()
-    const [hovered, setHovered] = useState(false)
-
-    useFrame(() => {
-        if (mesh.current) {
-            mesh.current.scale.y = THREE.MathUtils.lerp(mesh.current.scale.y, hovered || isSelected ? 1.3 : 1, 0.1)
+    // Smooth hover animation
+    useFrame((state, delta) => {
+        meshRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), 10 * delta)
+        // Add gentle breathing effect if occupied
+        if (occupied && !hovered) {
+            meshRef.current.position.y = position[1] + Math.sin(state.clock.elapsedTime * 2 + position[0]) * 0.05
         }
     })
 
-    const baseColor = occupied ? color : '#1e293b'
-    const emissive = hovered || isSelected ? (occupied ? color : '#334155') : '#000000'
-
     return (
-        <group position={position} onClick={(e) => { e.stopPropagation(); onClick && onClick() }}>
-            <mesh ref={mesh} position={[0, 0.15, 0]}
-                onPointerEnter={() => setHovered(true)}
-                onPointerLeave={() => setHovered(false)}>
-                <boxGeometry args={[0.7, 0.3, 0.7]} />
-                <meshStandardMaterial color={baseColor} emissive={emissive} emissiveIntensity={0.3} roughness={0.4} metalness={0.6} />
+        <group position={position}>
+            <mesh
+                ref={meshRef}
+                onPointerOver={(e) => { e.stopPropagation(); setHover(true); document.body.style.cursor = 'pointer' }}
+                onPointerOut={(e) => { setHover(false); document.body.style.cursor = 'auto' }}
+                onClick={(e) => { e.stopPropagation(); if (occupied) onClick(data) }}
+            >
+                <boxGeometry args={[0.9, 0.4, 0.9]} />
+                <meshStandardMaterial
+                    color={baseColor}
+                    roughness={0.2}
+                    metalness={0.8}
+                    emissive={baseColor}
+                    emissiveIntensity={hovered && occupied ? 0.8 : (occupied ? 0.2 : 0)}
+                />
             </mesh>
-            {/* Desk */}
-            <mesh position={[0, 0, 0]}>
-                <boxGeometry args={[0.75, 0.05, 0.75]} />
-                <meshStandardMaterial color="#0f172a" roughness={0.8} />
+            {/* Seat Backrest */}
+            <mesh position={[0, 0.35, -0.35]}>
+                <boxGeometry args={[0.9, 0.4, 0.1]} />
+                <meshStandardMaterial color={baseColor} roughness={0.4} metalness={0.6} />
             </mesh>
-            {occupied && label && (
-                <Text position={[0, 0.35, 0.38]} fontSize={0.13} color="white" anchorX="center" anchorY="middle" maxWidth={0.65}>
-                    {label}
-                </Text>
-            )}
         </group>
     )
 }
 
-function HallScene({ hall, seats, subjectMap, onSeatClick, selectedSeat }) {
-    const cols = hall.cols
-    const rows = hall.rows
-    const SPACING = 1.2
+function HallLayout3D({ hall, allocations, onSeatClick }) {
+    if (!hall) return null
+    const { rows, cols } = hall
 
+    // Center the whole grid on origin
+    const offsetX = ((cols - 1) * SEAT_SPACING) / 2
+    const offsetZ = ((rows - 1) * SEAT_SPACING) / 2
+
+    // Subject color mapping
+    const subjectColors = useMemo(() => {
+        const unique = [...new Set(allocations.map(a => a.subject_code))]
+        return unique.reduce((acc, code, idx) => {
+            acc[code] = palette[idx % palette.length]
+            return acc
+        }, {})
+    }, [allocations])
+
+    const seats = []
+    for (let r = 1; r <= rows; r++) {
+        for (let c = 1; c <= cols; c++) {
+            const alloc = allocations.find(a => a.row_num === r && a.col_num === c)
+            const posX = (c - 1) * SEAT_SPACING - offsetX
+            const posZ = (r - 1) * SEAT_SPACING - offsetZ
+
+            seats.push(
+                <Seat3D
+                    key={`${r}-${c}`}
+                    position={[posX, 0, posZ]}
+                    color={alloc ? subjectColors[alloc.subject_code] : '#334155'}
+                    occupied={!!alloc}
+                    data={alloc}
+                    onClick={onSeatClick}
+                />
+            )
+        }
+    }
+
+    // Floor Base
     return (
-        <>
-            <Environment preset="night" />
-            <ambientLight intensity={0.4} />
-            <pointLight position={[cols * SPACING / 2, 8, rows * SPACING / 2]} intensity={1.5} color="#a5b4fc" />
-            <pointLight position={[0, 6, 0]} intensity={0.8} color="#e879f9" />
-
-            {/* Floor */}
-            <mesh position={[cols * SPACING / 2 - SPACING / 2, -0.1, rows * SPACING / 2 - SPACING / 2]} rotation={[-Math.PI / 2, 0, 0]}>
-                <planeGeometry args={[cols * SPACING + 2, rows * SPACING + 2]} />
-                <meshStandardMaterial color="#0f172a" roughness={0.9} />
+        <group>
+            <mesh position={[0, -0.3, 0]} receiveShadow>
+                <boxGeometry args={[cols * SEAT_SPACING + 1, 0.1, rows * SEAT_SPACING + 1]} />
+                <meshStandardMaterial color="#0b1120" roughness={0.9} />
             </mesh>
-
-            {/* Seats */}
-            {Array.from({ length: rows }).map((_, r) =>
-                Array.from({ length: cols }).map((_, c) => {
-                    const seat = seats.find(s => s.row_num === r + 1 && s.col_num === c + 1)
-                    const color = seat ? (subjectMap[seat.subject_code] || COLORS_HEX[0]) : '#1e293b'
-                    return (
-                        <Seat
-                            key={`${r}-${c}`}
-                            position={[c * SPACING, 0, r * SPACING]}
-                            color={color}
-                            occupied={!!seat}
-                            label={seat?.student_id}
-                            isSelected={selectedSeat && seat && selectedSeat.id === seat.id}
-                            onClick={() => seat && onSeatClick(seat)}
-                        />
-                    )
-                })
-            )}
-
-            <OrbitControls enableDamping dampingFactor={0.05} minDistance={3} maxDistance={50} />
-        </>
+            {/* Grid Lines on Floor */}
+            <gridHelper args={[Math.max(rows, cols) * SEAT_SPACING * 1.5, Math.max(rows, cols), '#1e293b', '#0f172a']} position={[0, -0.24, 0]} />
+            {seats}
+        </group>
     )
 }
 
-// ─── MAIN PAGE ─────────────────────────────────────────────────────────────────
-
-export default function AllocationPage() {
+export default function AllocationPage({ collegeCode, isStaff }) {
+    const toast = useToast()
     const [halls, setHalls] = useState([])
-    const [selectedHall, setSelectedHall] = useState(null)
-    const [seats, setSeats] = useState([])
-    const [subjectMap, setSubjectMap] = useState({})
-    const [selectedSeat, setSelectedSeat] = useState(null)
-    const [allocating, setAllocating] = useState(false)
-    const [allocResult, setAllocResult] = useState(null)
+    const [allocations, setAllocations] = useState([])
+    const [students, setStudents] = useState([])
+    const [activeHallId, setActiveHallId] = useState(null)
     const [loading, setLoading] = useState(true)
-    const [loadingGrid, setLoadingGrid] = useState(false)
-    const [view, setView] = useState('3d')
-    const [search, setSearch] = useState('')
+    const [running, setRunning] = useState(false)
+    const [viewMode, setViewMode] = useState('3d') // '3d' or '2d'
+    const [selectedStudent, setSelectedStudent] = useState(null)
 
-    const load = async () => {
-        setLoading(true)
+    const loadData = async () => {
         try {
-            const h = await getHalls()
+            const [h, a, s] = await Promise.all([getHalls(collegeCode), getAllocations(collegeCode), getStudents(collegeCode)])
             setHalls(h)
-            if (h.length > 0) loadGrid(h[0])
-        } catch (e) { console.error(e) }
+            setAllocations(a)
+            setStudents(s)
+            if (h.length > 0 && !activeHallId) setActiveHallId(h[0].id)
+        } catch (e) { toast.error(e.message) }
         setLoading(false)
     }
 
-    const loadGrid = async (hall) => {
-        setSelectedHall(hall); setLoadingGrid(true); setSeats([])
+    useEffect(() => {
+        if (collegeCode) loadData()
+    }, [collegeCode])
+
+    const handleRunLayout = async () => {
+        if (students.length === 0 || halls.length === 0) return toast.warning("Needs students and halls first.")
+        if (!window.confirm("This will clear existing allocations. Run algorithm?")) return
+
+        setRunning(true)
         try {
-            const s = await getHallAllocation(hall.id)
-            setSeats(s)
-            const subjects = [...new Set(s.map(x => x.subject_code))]
-            const map = {}
-            subjects.sort().forEach((sub, i) => { map[sub] = COLORS_HEX[i % COLORS_HEX.length] })
-            setSubjectMap(map)
-        } catch { }
-        setLoadingGrid(false)
+            const result = allocateSeats(students, halls)
+            await saveAllocations(collegeCode, result.allocations)
+
+            if (result.conflicts > 0) toast.warning(`Allocated, but ${result.conflicts} subject collision(s) could not be avoided due to hall size.`)
+            else toast.success(`Perfect allocation: ${result.allocations.length} seated!`)
+
+            if (result.unallocated.length > 0) toast.error(`${result.unallocated.length} students could not fit anywhere.`)
+
+            loadData()
+        } catch (e) { toast.error(e.message) }
+        setRunning(false)
     }
 
-    useEffect(() => { load() }, [])
+    const activeHall = halls.find(h => h.id === activeHallId)
+    const hallAllocations = allocations.filter(a => a.hall_id === activeHallId)
 
-    const handleAllocate = async () => {
-        setAllocating(true); setAllocResult(null)
-        try {
-            const r = await runAllocation()
-            setAllocResult(r)
-            if (selectedHall) loadGrid(selectedHall)
-            else load()
-        } catch (err) { setAllocResult({ error: err.message }) }
-        setAllocating(false)
+    const subjectColors = useMemo(() => {
+        const unique = [...new Set(hallAllocations.map(a => a.subject_code))]
+        return unique.reduce((acc, code, idx) => { acc[code] = palette[idx % palette.length]; return acc }, {})
+    }, [hallAllocations])
+
+    if (loading) return <div className="h-64 rounded-3xl shimmer border border-slate-800 animate-slide-up" />
+
+    // --- 2D Grid Render ---
+    const render2DMenu = () => {
+        if (!activeHall) return null
+        const grid = Array(activeHall.rows).fill(null).map(() => Array(activeHall.cols).fill(null))
+        hallAllocations.forEach(a => grid[a.row_num - 1][a.col_num - 1] = a)
+
+        return (
+            <div className="overflow-auto max-h-[600px] p-6 no-scrollbar relative">
+                <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[100px] pointer-events-none" />
+                <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
+                <div className="inline-grid gap-3 relative z-10 mx-auto" style={{ gridTemplateColumns: `repeat(${activeHall.cols}, minmax(0, 1fr))` }}>
+                    {grid.map((row, r) => row.map((cell, c) => (
+                        <div key={`${r}-${c}`}
+                            onClick={() => cell && setSelectedStudent(cell)}
+                            className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center text-[10px] font-bold border-2 transition-all cursor-pointer ${cell ? 'hover:scale-110 shadow-lg' : 'border-dashed border-slate-700 bg-slate-900/40 relative group'}`}
+                            style={cell ? { backgroundColor: `${subjectColors[cell.subject_code]}20`, borderColor: subjectColors[cell.subject_code], color: subjectColors[cell.subject_code] } : {}}>
+                            {cell ? (
+                                <>
+                                    <span className="text-white text-xs whitespace-nowrap overflow-hidden text-ellipsis w-14 text-center">{cell.student_id}</span>
+                                    <span className="opacity-70 mt-1 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: subjectColors[cell.subject_code] }}><span className="text-white mix-blend-difference">{cell.subject_code}</span></span>
+                                </>
+                            ) : (
+                                <span className="text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">R{r + 1}C{c + 1}</span>
+                            )}
+                        </div>
+                    )))}
+                </div>
+            </div>
+        )
     }
-
-    const filteredSeats = search ? seats.filter(s =>
-        String(s.student_id).toUpperCase().includes(search.toUpperCase()) ||
-        String(s.student_name).toUpperCase().includes(search.toUpperCase())
-    ) : seats
 
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="space-y-6 animate-slide-up h-[85vh] flex flex-col">
+            <div className="glass p-6 rounded-3xl border-l-[6px] border-l-emerald-500 shadow-xl flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 shrink-0">
                 <div>
-                    <h2 className="text-2xl font-bold text-white">🎯 Allocation</h2>
-                    <p className="text-slate-400 text-sm mt-1">3D seat visualization · Run algorithm to allocate seats</p>
+                    <div className="flex items-center gap-4 mb-2">
+                        <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><Activity size={24} /></div>
+                        <h2 className="text-3xl font-black">Allocation Visualizer</h2>
+                    </div>
+                    <p className="text-slate-400 ml-16">{isStaff ? "View seating arrangements." : "Run the matrix algorithm to generate zero-conflict seating."}</p>
                 </div>
-                <button onClick={handleAllocate} disabled={allocating}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold transition-all disabled:opacity-50 shadow-lg shadow-indigo-500/20">
-                    {allocating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '▶'}
-                    {allocating ? 'Allocating...' : 'Run Allocation'}
-                </button>
-            </div>
 
-            {/* Result banner */}
-            {allocResult && (
-                <div className={`rounded-2xl p-4 border ${allocResult.error ? 'bg-red-500/10 border-red-500/30 text-red-400' : 'bg-emerald-500/10 border-emerald-500/30'}`}>
-                    {allocResult.error ? <p>❌ {allocResult.error}</p> : (
-                        <div className="flex flex-wrap gap-6 items-center">
-                            <span className="text-emerald-400 font-semibold">✅ Allocation complete!</span>
-                            <span className="text-slate-300">Seats filled: <b className="text-white">{allocResult.allocated}</b></span>
-                            <span className="text-slate-300">Unallocated: <b className="text-amber-400">{allocResult.unallocated}</b></span>
+                <div className="flex items-center gap-3 ml-16 lg:ml-0 bg-slate-900/50 p-2 rounded-2xl border border-slate-800">
+                    <button onClick={() => setViewMode('3d')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-colors ${viewMode === '3d' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                        <Maximize2 size={18} /> 3D Enivornment
+                    </button>
+                    <button onClick={() => setViewMode('2d')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-colors ${viewMode === '2d' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                        <Columns size={18} /> 2D Matrix Map
+                    </button>
+                    {!isStaff && (
+                        <div className="border-l border-slate-700 pl-3 ml-2 border-dashed">
+                            <button onClick={handleRunLayout} disabled={running} className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all w-max leading-none">
+                                {running ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing</> : <><Play fill="currentColor" size={16} /> Run Algorithm</>}
+                            </button>
                         </div>
                     )}
                 </div>
-            )}
+            </div>
 
-            {/* Hall selector */}
-            {halls.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                    {halls.map(h => (
-                        <button key={h.id} onClick={() => loadGrid(h)}
-                            className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${selectedHall?.id === h.id ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30' : 'bg-slate-800 text-slate-400 hover:text-white border border-slate-700'}`}>
-                            {h.name} <span className="opacity-60">({h.capacity})</span>
-                        </button>
-                    ))}
-                </div>
-            )}
-
-            {/* Subject legend */}
-            {Object.keys(subjectMap).length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                    {Object.entries(subjectMap).map(([sub, color]) => (
-                        <div key={sub} className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 text-sm">
-                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: color }} />
-                            <span className="text-slate-300">{sub}</span>
-                        </div>
-                    ))}
-                </div>
-            )}
-
-            {/* View toggle + search */}
-            {selectedHall && (
-                <div className="flex flex-wrap items-center gap-3">
-                    <div className="flex items-center gap-1 bg-slate-800 p-1 rounded-xl">
-                        {['3d', '2d'].map(v => (
-                            <button key={v} onClick={() => setView(v)}
-                                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${view === v ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white'}`}>
-                                {v === '3d' ? '🎲 3D' : '⊞ 2D'}
+            {halls.length > 0 ? (
+                <div className="flex flex-col flex-1 overflow-hidden min-h-[500px]">
+                    {/* Hall Tabs */}
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 shrink-0 border-b border-slate-800">
+                        {halls.map(h => (
+                            <button key={h.id} onClick={() => setActiveHallId(h.id)}
+                                className={`px-5 py-3 rounded-t-2xl font-bold text-sm tracking-widest whitespace-nowrap transition-colors uppercase relative
+                                    ${activeHallId === h.id ? 'text-white bg-slate-900 border-t border-x border-slate-800' : 'text-slate-500 hover:text-slate-300'}`}>
+                                {h.name}
+                                {activeHallId === h.id && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-t-full" />}
                             </button>
                         ))}
                     </div>
-                    <input value={search} onChange={e => setSearch(e.target.value)}
-                        placeholder="Search student in this hall..."
-                        className="flex-1 min-w-[200px] bg-slate-800 border border-slate-700 rounded-xl px-4 py-2 text-white placeholder-slate-500 text-sm focus:outline-none focus:border-indigo-500" />
-                    <span className="text-slate-400 text-sm">{seats.length}/{selectedHall?.capacity} occupied</span>
-                </div>
-            )}
 
-            {/* 3D / 2D view */}
-            {loading ? (
-                <div className="flex justify-center py-16"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
-            ) : !selectedHall ? (
-                <div className="text-center py-16 text-slate-500">
-                    <div className="text-6xl mb-4">🏛️</div>
-                    <p>Add halls first, then run allocation</p>
+                    {/* Stage */}
+                    <div className="flex-1 bg-slate-950 rounded-b-3xl rounded-tr-3xl relative overflow-hidden border border-t-0 border-slate-800 shadow-2xl flex">
+
+                        {viewMode === '3d' ? (
+                            <div className="w-full h-full relative cursor-move">
+                                <div className="absolute top-6 left-6 z-10 pointer-events-none mix-blend-difference">
+                                    <h3 className="text-4xl font-black text-white mix-blend-overlay opacity-50 tracking-tighter uppercase">{activeHall?.name}</h3>
+                                    <p className="text-slate-400 font-mono font-bold tracking-widest">3D HALL RENDER</p>
+                                </div>
+                                <Canvas camera={{ position: [0, 8, 12], fov: 45 }}>
+                                    <color attach="background" args={['#020617']} />
+                                    <fog attach="fog" args={['#020617', 15, 30]} />
+                                    <ambientLight intensity={0.4} />
+                                    <pointLight position={[0, 10, 0]} intensity={1.5} color="#indigo" />
+                                    <directionalLight position={[5, 10, -5]} intensity={1} castShadow />
+
+                                    <OrbitControls enableDamping dampingFactor={0.05} autoRotate autoRotateSpeed={0.5} maxPolarAngle={Math.PI / 2.1} minDistance={5} maxDistance={25} />
+
+                                    <HallLayout3D hall={activeHall} allocations={hallAllocations} onSeatClick={setSelectedStudent} />
+                                </Canvas>
+                                <div className="absolute bottom-6 right-6 z-10 glass px-4 py-2 rounded-xl text-xs font-mono font-bold text-slate-400 border-indigo-500/20 text-right">
+                                    <p>Left Click: Rotate Scene</p>
+                                    <p>Scroll: Zoom in/out</p>
+                                    <p className="text-indigo-400">Click Seat: View Details</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="w-full h-full bg-slate-900/50 flex items-center justify-center p-8">
+                                {render2DMenu()}
+                            </div>
+                        )}
+
+                        {/* Subject Legend */}
+                        <div className="absolute top-6 right-6 w-56 glass p-5 rounded-2xl shadow-xl z-10 border-indigo-500/20">
+                            <h4 className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-4 border-b border-slate-800 pb-2">Subject Legend</h4>
+                            {Object.entries(subjectColors).length > 0 ? (
+                                <div className="space-y-3">
+                                    {Object.entries(subjectColors).map(([sub, col]) => (
+                                        <div key={sub} className="flex items-center gap-3">
+                                            <div className="w-4 h-4 rounded-full border border-white/20 shadow-lg" style={{ backgroundColor: col, boxShadow: `0 0 10px ${col}80` }} />
+                                            <span className="text-sm font-bold text-white tracking-widest font-mono">{sub}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : <p className="text-xs text-slate-500 font-mono">No allocation data</p>}
+                        </div>
+
+                        {/* Student Details Modal */}
+                        {selectedStudent && (
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 glass p-6 rounded-3xl z-20 shadow-2xl border-purple-500/50 animate-slide-up bg-slate-900/95 backdrop-blur-xl">
+                                <button onClick={() => setSelectedStudent(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                                    <X size={20} />
+                                </button>
+                                <div className="w-16 h-16 rounded-full mx-auto mb-4 border-2 shadow-xl flex items-center justify-center text-2xl" style={{ borderColor: subjectColors[selectedStudent.subject_code], backgroundColor: `${subjectColors[selectedStudent.subject_code]}20`, color: subjectColors[selectedStudent.subject_code] }}>
+                                    👨‍🎓
+                                </div>
+                                <h3 className="text-xl font-black text-center text-white leading-tight mb-1">{selectedStudent.student_name}</h3>
+                                <p className="text-sm text-center text-slate-400 font-mono tracking-wider mb-6">{selectedStudent.student_id}</p>
+
+                                <div className="space-y-2">
+                                    <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Subject</span>
+                                        <span className="text-sm font-black tracking-widest" style={{ color: subjectColors[selectedStudent.subject_code] }}>{selectedStudent.subject_code}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Seat Position</span>
+                                        <span className="text-sm font-black text-white tracking-widest font-mono">R{selectedStudent.row_num} • C{selectedStudent.col_num}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 </div>
             ) : (
-                <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden">
-                    {view === '3d' ? (
-                        <div style={{ height: '520px' }}>
-                            {loadingGrid ? (
-                                <div className="flex items-center justify-center h-full"><div className="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin" /></div>
-                            ) : (
-                                <Canvas camera={{ position: [selectedHall.cols * 0.6, selectedHall.rows * 0.8, selectedHall.rows * 1.2], fov: 50 }} shadows>
-                                    <Suspense fallback={null}>
-                                        <HallScene hall={selectedHall} seats={filteredSeats} subjectMap={subjectMap} onSeatClick={setSelectedSeat} selectedSeat={selectedSeat} />
-                                    </Suspense>
-                                </Canvas>
-                            )}
-                        </div>
-                    ) : (
-                        <div className="p-4 overflow-auto max-h-[520px]">
-                            <div className="inline-block">
-                                {Array.from({ length: selectedHall.rows }).map((_, r) => (
-                                    <div key={r} className="flex gap-1 mb-1">
-                                        <span className="w-8 text-xs text-slate-600 flex items-center justify-end pr-1">R{r + 1}</span>
-                                        {Array.from({ length: selectedHall.cols }).map((_, c) => {
-                                            const seat = seats.find(s => s.row_num === r + 1 && s.col_num === c + 1)
-                                            const color = seat ? subjectMap[seat.subject_code] : null
-                                            const highlighted = search && filteredSeats.includes(seat)
-                                            return (
-                                                <div key={c} onClick={() => seat && setSelectedSeat(seat)}
-                                                    className={`w-16 h-12 rounded-lg flex flex-col items-center justify-center text-[10px] cursor-pointer transition-all hover:scale-110 ${seat ? 'border' : 'bg-slate-800/30 border border-slate-700/30'} ${highlighted ? 'ring-2 ring-yellow-400' : ''}`}
-                                                    style={seat ? { backgroundColor: `${color}22`, borderColor: `${color}55` } : {}}>
-                                                    {seat && (
-                                                        <>
-                                                            <span className="font-semibold truncate w-full text-center px-1" style={{ color }}>{seat.student_id}</span>
-                                                            <span className="text-slate-400 truncate w-full text-center">{seat.subject_code}</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-
-            {/* Seat detail modal */}
-            {selectedSeat && (
-                <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setSelectedSeat(null)}>
-                    <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 max-w-sm w-full shadow-2xl" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-xl font-bold text-white mb-5">📍 Seat Details</h3>
-                        {[
-                            ['Student ID', selectedSeat.student_id],
-                            ['Name', selectedSeat.student_name],
-                            ['Subject', selectedSeat.subject_code],
-                            ['Hall', selectedSeat.hall_name],
-                            ['Position', `Row ${selectedSeat.row_num}, Col ${selectedSeat.col_num}`],
-                        ].map(([k, v]) => (
-                            <div key={k} className="flex justify-between py-2.5 border-b border-slate-800 last:border-0">
-                                <span className="text-slate-400 text-sm">{k}</span>
-                                <span className="text-white text-sm font-medium">{v}</span>
-                            </div>
-                        ))}
-                        <button onClick={() => setSelectedSeat(null)} className="w-full mt-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-medium transition-all">Close</button>
-                    </div>
+                <div className="glass p-16 rounded-3xl text-center border-dashed border-2 border-slate-700 h-64 flex flex-col items-center justify-center text-slate-500">
+                    <Activity size={40} className="mb-4 opacity-50" />
+                    <p className="font-bold text-xl text-white mb-2">No Halls Available</p>
+                    <p className="text-sm">Please create halls in the Halls tab before running algorithms.</p>
                 </div>
             )}
         </div>
