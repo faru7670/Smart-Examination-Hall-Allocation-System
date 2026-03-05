@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { auth, db } from '../firebase'
-import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth'
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from 'firebase/auth'
 import { doc, setDoc, getDocs, collection, query, where } from 'firebase/firestore'
 import { useToast } from '../context/ToastContext'
 import { useAuth } from '../context/AuthContext'
@@ -30,11 +30,12 @@ export default function AuthPage() {
             if (isLogin) {
                 const cred = await signInWithEmailAndPassword(auth, email, password)
 
-                // Self-healing: If they log in and we detect they are a legacy admin with the dummy name,
-                // we overwrite their Firestore doc with the Name they just typed into the login box!
+                // Enforce Database Validation: Check if a Firestore profile actually exists
                 const docSnap = await getDoc(doc(db, 'users', cred.user.uid))
-                if (docSnap.exists() && docSnap.data().name === 'Legacy Admin' && name.trim() !== '') {
-                    await setDoc(doc(db, 'users', cred.user.uid), { name: name }, { merge: true })
+
+                if (!docSnap.exists()) {
+                    await signOut(auth) // Immediately destroy the Firebase Auth session
+                    throw new Error("No admin profile found. Please click 'Create one' to register your college.")
                 }
 
                 await fetchUserData(cred.user.uid)

@@ -51,26 +51,8 @@ export function AuthProvider({ children }) {
                     if (docSnap.exists()) {
                         setUserData(docSnap.data())
                     } else {
-                        // User has no doc. This is a legacy account from before our multi-tenant upgrade.
-                        // We must create a permanent doc for them so they don't get random college codes on refresh!
-                        const code = Math.random().toString(36).substring(2, 8).toUpperCase()
-                        const legacyData = {
-                            role: 'admin',
-                            collegeCode: code,
-                            name: user.displayName || 'Legacy Admin',
-                            email: user.email,
-                            createdAt: new Date().toISOString()
-                        }
-                        // Optimistically set the data so the UI loads immediately
-                        setUserData(legacyData)
-                        // Permanently write to DB so their collegeCode stays the same forever
-                        setDoc(doc(db, 'users', user.uid), legacyData)
-                            .then(() => console.log("Legacy user migrated perfectly."))
-                            .catch(err => {
-                                console.error("Could not migrate legacy user to DB:", err)
-                                // If they get permission denied, fallback to a STATIC code rather than random
-                                setUserData({ ...legacyData, collegeCode: 'LEGACY' })
-                            })
+                        // Real-world enforcement: No profile document means no access.
+                        setUserData(null)
                     }
                     setUserLoading(false)
                 }, (error) => {
