@@ -22,7 +22,7 @@ export default function App() {
 }
 
 function AppRouter() {
-    const { currentUser, userData, isAuthReady } = useAuth()
+    const { isAuthReady } = useAuth()
     const { theme } = useTheme()
 
     if (!isAuthReady) {
@@ -48,12 +48,8 @@ function AppRouter() {
                     </ProtectedRoute>
                 } />
 
-                {/* Protected Staff */}
-                <Route path="/staff/*" element={
-                    <ProtectedRoute role="invigilator">
-                        <StaffDashboard />
-                    </ProtectedRoute>
-                } />
+                {/* Protected Staff (StaffDashboard protects itself via localStorage check) */}
+                <Route path="/staff/*" element={<StaffDashboard />} />
 
                 {/* Fallback */}
                 <Route path="*" element={<Navigate to="/" replace />} />
@@ -63,7 +59,11 @@ function AppRouter() {
 }
 
 function ProtectedRoute({ role, children }) {
-    const { currentUser, userData } = useAuth()
+    const { currentUser, userData, userLoading } = useAuth()
+
+    if (userLoading) {
+        return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading your profile...</div>
+    }
 
     if (!currentUser) return <Navigate to="/" replace />
 
