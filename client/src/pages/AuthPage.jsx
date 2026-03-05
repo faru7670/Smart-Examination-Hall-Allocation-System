@@ -104,7 +104,7 @@ export default function AuthPage() {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
-            <Link to="/" className="absolute top-6 left-6 text-slate-400 hover:text-white flex items-center gap-2 transition z-20">
+            <Link to="/" className="absolute top-6 left-6 text-slate-600 hover:text-slate-900 flex items-center gap-2 transition z-20">
                 <ArrowLeft size={20} /> Back
             </Link>
 
@@ -117,7 +117,7 @@ export default function AuthPage() {
                         {type === 'admin' ? <ShieldCheck size={32} /> : <Users size={32} />}
                     </div>
                     <h2 className="text-3xl font-black">{type === 'admin' ? (isLogin ? 'Admin Login' : 'Create Admin') : 'Staff Login'}</h2>
-                    <p className="text-slate-400 mt-2 text-sm">
+                    <p className="text-slate-600 mt-2 text-sm">
                         {type === 'admin' ? 'Manage your entire college seating arrangement.' : 'Access your designated hall seating charts.'}
                     </p>
                 </div>
@@ -125,33 +125,33 @@ export default function AuthPage() {
                 <form onSubmit={onSubmit} className="space-y-4">
                     {type === 'admin' && (
                         <div>
-                            <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">Admin Name</label>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">Admin Name</label>
                             <input type="text" value={name} onChange={e => setName(e.target.value)} required
-                                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
+                                className="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
                                 placeholder="E.g., Dr. Smith" />
                         </div>
                     )}
 
                     {type === 'staff' && (
                         <div>
-                            <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">College Code</label>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">College Code</label>
                             <input type="text" value={collegeCode} onChange={e => setCollegeCode(e.target.value.toUpperCase())} required
-                                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-colors uppercase"
+                                className="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-colors uppercase"
                                 placeholder="E.g., RX79P" maxLength={6} />
                         </div>
                     )}
 
                     <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">Email Address</label>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">Email Address</label>
                         <input type="email" value={email} onChange={e => setEmail(e.target.value)} required
-                            className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
+                            className="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
                             placeholder="mail@college.edu" />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">Password</label>
+                        <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">Password</label>
                         <input type="password" value={password} onChange={e => setPassword(e.target.value)} required
-                            className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
+                            className="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-indigo-500 transition-colors"
                             placeholder="••••••••" />
                     </div>
 
@@ -163,7 +163,7 @@ export default function AuthPage() {
                 </form>
 
                 {type === 'admin' && (
-                    <p className="mt-6 text-center text-sm text-slate-400">
+                    <p className="mt-6 text-center text-sm text-slate-600">
                         {isLogin ? "Don't have an account?" : "Already registered?"}
                         <button onClick={() => setIsLogin(!isLogin)} className="text-indigo-400 font-semibold ml-2 hover:underline">
                             {isLogin ? "Create one" : "Sign in here"}

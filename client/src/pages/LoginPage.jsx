@@ -18,7 +18,7 @@ export default function LoginPage({ onLogin }) {
     }
 
     return (
-        <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4 relative overflow-hidden">
             {/* Animated background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-600/10 rounded-full blur-3xl animate-pulse" />
@@ -32,16 +32,16 @@ export default function LoginPage({ onLogin }) {
                     <div className="w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-4xl shadow-2xl shadow-indigo-500/30">
                         🏛️
                     </div>
-                    <h1 className="text-3xl font-extrabold text-white">ExamHall</h1>
-                    <p className="text-slate-400 mt-1">Smart Seat Allocation System</p>
+                    <h1 className="text-3xl font-extrabold text-slate-900">ExamHall</h1>
+                    <p className="text-slate-600 mt-1">Smart Seat Allocation System</p>
                 </div>
 
                 {/* Form */}
-                <div className="bg-slate-900/70 backdrop-blur-sm border border-slate-800 rounded-2xl p-8 shadow-2xl">
-                    <h2 className="text-xl font-bold text-white mb-6">Admin Login</h2>
+                <div className="bg-white/70 backdrop-blur-sm border border-slate-200 rounded-2xl p-8 shadow-2xl">
+                    <h2 className="text-xl font-bold text-slate-900 mb-6">Admin Login</h2>
                     <form onSubmit={handleSubmit} className="space-y-5">
                         <div>
-                            <label className="block text-sm text-slate-400 mb-2">Password</label>
+                            <label className="block text-sm text-slate-600 mb-2">Password</label>
                             <input
                                 type="password"
                                 value={password}
@@ -49,7 +49,7 @@ export default function LoginPage({ onLogin }) {
                                 placeholder="Enter admin password"
                                 required
                                 autoFocus
-                                className="w-full bg-slate-800/80 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all"
+                                className="w-full bg-slate-200/80 border border-slate-300 rounded-xl px-4 py-3 text-slate-900 placeholder-slate-500 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500/50 transition-all"
                             />
                         </div>
                         {error && (
@@ -60,7 +60,7 @@ export default function LoginPage({ onLogin }) {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
+                            className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-slate-900 font-semibold py-3 rounded-xl transition-all duration-200 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/20"
                         >
                             {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : '🔓 Login'}
                         </button>

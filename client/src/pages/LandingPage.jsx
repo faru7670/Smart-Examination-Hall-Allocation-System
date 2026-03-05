@@ -35,7 +35,7 @@ export default function LandingPage() {
                     <h2 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
                         Flawless <span className="gradient-text">Exam Seats</span> <br />in Seconds.
                     </h2>
-                    <p className={`text-lg md:text-xl ${isDark ? 'text-slate-400' : 'text-slate-600'} mb-10`}>
+                    <p className={`text-lg md:text-xl ${isDark ? 'text-slate-600' : 'text-slate-600'} mb-10`}>
                         The ultimate multi-tenant platform for colleges. Smart subject-separation algorithms, complete 3D hall visualization, and personalized portals for admins, staff, and students.
                     </p>
                 </motion.div>
@@ -50,7 +50,7 @@ export default function LandingPage() {
                             <ShieldCheck size={28} />
                         </div>
                         <h3 className="text-2xl font-bold mb-3">College Admin</h3>
-                        <p className={`mb-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Create halls, upload bulk students, run algorithms, add staff, and oversee the entire college dashboard.</p>
+                        <p className={`mb-8 ${isDark ? 'text-slate-600' : 'text-slate-600'}`}>Create halls, upload bulk students, run algorithms, add staff, and oversee the entire college dashboard.</p>
                         <Link to="/auth/admin" className="inline-flex items-center gap-2 text-indigo-500 font-semibold group-hover:gap-3 transition-all">
                             Admin Portal <ArrowRight size={18} />
                         </Link>
@@ -65,7 +65,7 @@ export default function LandingPage() {
                             <Users size={28} />
                         </div>
                         <h3 className="text-2xl font-bold mb-3">Invigilator Staff</h3>
-                        <p className={`mb-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Log in to access generated seating charts, print authentic PDFs, and manage hall rosters effortlessly.</p>
+                        <p className={`mb-8 ${isDark ? 'text-slate-600' : 'text-slate-600'}`}>Log in to access generated seating charts, print authentic PDFs, and manage hall rosters effortlessly.</p>
                         <Link to="/auth/staff" className="inline-flex items-center gap-2 text-purple-500 font-semibold group-hover:gap-3 transition-all">
                             Staff Login <ArrowRight size={18} />
                         </Link>
@@ -81,7 +81,7 @@ export default function LandingPage() {
                             <GraduationCap size={28} />
                         </div>
                         <h3 className="text-2xl font-bold mb-3">Student Portal</h3>
-                        <p className={`mb-8 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Find your exact seat, hall, row, and column in seconds using your College Code and Roll Number.</p>
+                        <p className={`mb-8 ${isDark ? 'text-slate-600' : 'text-slate-600'}`}>Find your exact seat, hall, row, and column in seconds using your College Code and Roll Number.</p>
                         <Link to="/student" className="inline-flex items-center gap-2 text-emerald-500 font-semibold group-hover:gap-3 transition-all">
                             Check Seat <ArrowRight size={18} />
                         </Link>

@@ -64,7 +64,7 @@ export default function StudentDashboard() {
                 <div className="relative z-10 w-full max-w-lg">
                     <div className="text-center mb-8 animate-slide-up">
                         <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-br from-primary-500 to-accent-500 mb-6 shadow-2xl shadow-primary-500/30">
-                            <HiOutlineAcademicCap className="w-10 h-10 text-white" />
+                            <HiOutlineAcademicCap className="w-10 h-10 text-slate-900" />
                         </div>
                         <h1 className="text-4xl font-bold bg-gradient-to-r from-white to-dark-300 bg-clip-text text-transparent">Student Dashboard</h1>
                         <p className="text-dark-400 mt-2 text-lg">Enter your ID to access your exam allocation portal</p>
@@ -124,7 +124,7 @@ export default function StudentDashboard() {
                             <div className="w-24 h-24 mx-auto rounded-3xl bg-dark-800 border-2 border-primary-500/30 flex items-center justify-center shadow-inner mb-4">
                                 <HiOutlineUser className="w-10 h-10 text-primary-400" />
                             </div>
-                            <h2 className="text-xl font-bold text-white">{result.student_name}</h2>
+                            <h2 className="text-xl font-bold text-slate-900">{result.student_name}</h2>
                             <p className="text-primary-400 font-mono mt-1 px-3 py-1 bg-primary-500/10 rounded-full inline-block">{result.student_id}</p>
                         </div>
 
@@ -133,7 +133,7 @@ export default function StudentDashboard() {
                                 <div className="p-2 rounded-lg bg-dark-800"><HiOutlineBookOpen className="w-5 h-5 text-accent-400" /></div>
                                 <div>
                                     <p className="text-xs text-dark-500">Exam Subject</p>
-                                    <p className="font-semibold text-white">{result.subject_code}</p>
+                                    <p className="font-semibold text-slate-900">{result.subject_code}</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 text-dark-300">
@@ -166,10 +166,10 @@ export default function StudentDashboard() {
                     <div className="glass-card p-6 lg:p-8 animate-slide-up" style={{ animationDelay: '0.3s' }}>
                         <div className="flex items-center gap-3 mb-6 pb-6 border-b border-dark-700/50">
                             <div className="p-3 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20">
-                                <HiOutlineLocationMarker className="w-6 h-6 text-white" />
+                                <HiOutlineLocationMarker className="w-6 h-6 text-slate-900" />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-white">Your Seating Info</h1>
+                                <h1 className="text-2xl font-bold text-slate-900">Your Seating Info</h1>
                                 <p className="text-sm text-dark-400">Proceed to this exact location during your exam slot.</p>
                             </div>
                         </div>
@@ -178,17 +178,17 @@ export default function StudentDashboard() {
                             <div className="p-5 rounded-2xl bg-dark-900/80 border border-dark-700/50">
                                 <HiOutlineOfficeBuilding className="w-6 h-6 text-primary-400 mb-3" />
                                 <p className="text-sm text-dark-400">Building / Hall</p>
-                                <p className="text-xl font-bold text-white mt-1">{result.hall_name}</p>
+                                <p className="text-xl font-bold text-slate-900 mt-1">{result.hall_name}</p>
                             </div>
                             <div className="p-5 rounded-2xl bg-dark-900/80 border border-dark-700/50">
                                 <span className="w-8 h-8 rounded bg-dark-800 border border-dark-600 flex items-center justify-center font-mono text-xs text-dark-300 mb-3">R</span>
                                 <p className="text-sm text-dark-400">Row Number</p>
-                                <p className="text-2xl font-bold text-white mt-1">Row {result.row_num}</p>
+                                <p className="text-2xl font-bold text-slate-900 mt-1">Row {result.row_num}</p>
                             </div>
                             <div className="p-5 rounded-2xl bg-dark-900/80 border border-dark-700/50">
                                 <span className="w-8 h-8 rounded bg-dark-800 border border-dark-600 flex items-center justify-center font-mono text-xs text-dark-300 mb-3">C</span>
                                 <p className="text-sm text-dark-400">Column / Desk</p>
-                                <p className="text-2xl font-bold text-white mt-1">Desk {result.col_num}</p>
+                                <p className="text-2xl font-bold text-slate-900 mt-1">Desk {result.col_num}</p>
                             </div>
                         </div>
 
@@ -206,7 +206,7 @@ export default function StudentDashboard() {
                         {/* 3D Visualizer */}
                         {result.hall_rows && result.hall_cols && (
                             <div className="mt-8">
-                                <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
+                                <h3 className="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2">
                                     <HiOutlineLocationMarker className="w-5 h-5 text-accent-400" />
                                     3D Path Finder
                                 </h3>

@@ -51,7 +51,7 @@ export default function StaffManagementPage({ collegeCode }) {
                     <div className="w-12 h-12 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center"><Users size={24} /></div>
                     <h2 className="text-3xl font-black">Staff Management</h2>
                 </div>
-                <p className="text-slate-400 ml-16">Create login credentials for invigilators so they can access seating charts. Share your College Code (<b className="text-white">{collegeCode}</b>) with them.</p>
+                <p className="text-slate-600 ml-16">Create login credentials for invigilators so they can access seating charts. Share your College Code (<b className="text-slate-900">{collegeCode}</b>) with them.</p>
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
@@ -60,24 +60,24 @@ export default function StaffManagementPage({ collegeCode }) {
                     <h3 className="font-bold text-lg mb-6 flex items-center gap-2"><div className="w-2 h-6 bg-indigo-500 rounded-full" /> Add Invigilator</h3>
                     <form onSubmit={handleAdd} className="space-y-4">
                         <div>
-                            <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">Full Name</label>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">Full Name</label>
                             <input type="text" value={name} onChange={e => setName(e.target.value)} required placeholder="John Doe"
-                                className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-colors" />
+                                className="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 transition-colors" />
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">Email Address</label>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">Email Address</label>
                             <div className="relative">
-                                <Mail size={16} className="absolute left-4 top-3.5 text-slate-500" />
+                                <Mail size={16} className="absolute left-4 top-3.5 text-slate-600" />
                                 <input type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="staff@college.edu"
-                                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-purple-500 transition-colors" />
+                                    className="w-full bg-white/80 border border-slate-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-purple-500 transition-colors" />
                             </div>
                         </div>
                         <div>
-                            <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">Temporary Password</label>
+                            <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">Temporary Password</label>
                             <div className="relative">
-                                <Key size={16} className="absolute left-4 top-3.5 text-slate-500" />
+                                <Key size={16} className="absolute left-4 top-3.5 text-slate-600" />
                                 <input type="text" value={password} onChange={e => setPassword(e.target.value)} required placeholder="Password123!"
-                                    className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-purple-500 transition-colors" />
+                                    className="w-full bg-white/80 border border-slate-200 rounded-xl pl-10 pr-4 py-3 focus:outline-none focus:border-purple-500 transition-colors" />
                             </div>
                         </div>
                         <button type="submit" className="w-full py-3 mt-4 rounded-xl font-bold bg-gradient-to-r from-purple-500 to-indigo-600 hover:shadow-lg hover:shadow-purple-500/20 hover:-translate-y-1 transition-all">
@@ -91,10 +91,10 @@ export default function StaffManagementPage({ collegeCode }) {
                     {loading ? (
                         <div className="space-y-4">{[1, 2].map(i => <div key={i} className="h-20 rounded-2xl shimmer" />)}</div>
                     ) : staff.length === 0 ? (
-                        <div className="glass p-12 rounded-3xl text-center border-dashed border-2 border-slate-700">
-                            <div className="w-16 h-16 rounded-full bg-slate-800 mx-auto mb-4 flex items-center justify-center text-slate-400"><Users size={30} /></div>
-                            <h3 className="font-bold text-xl mb-1 text-white">No Staff Accounts</h3>
-                            <p className="text-slate-400 text-sm">Create accounts for your invigilators here. They will need these credentials plus your College Code to log in.</p>
+                        <div className="glass p-12 rounded-3xl text-center border-dashed border-2 border-slate-300">
+                            <div className="w-16 h-16 rounded-full bg-slate-200 mx-auto mb-4 flex items-center justify-center text-slate-600"><Users size={30} /></div>
+                            <h3 className="font-bold text-xl mb-1 text-slate-900">No Staff Accounts</h3>
+                            <p className="text-slate-600 text-sm">Create accounts for your invigilators here. They will need these credentials plus your College Code to log in.</p>
                         </div>
                     ) : (
                         <div className="space-y-4">
@@ -103,16 +103,16 @@ export default function StaffManagementPage({ collegeCode }) {
                                     <div className="flex items-center gap-4">
                                         <div className="w-12 h-12 rounded-full bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-xl">{s.name[0]?.toUpperCase()}</div>
                                         <div>
-                                            <p className="font-bold text-white text-lg leading-tight">{s.name}</p>
-                                            <p className="text-sm text-slate-400">{s.email}</p>
+                                            <p className="font-bold text-slate-900 text-lg leading-tight">{s.name}</p>
+                                            <p className="text-sm text-slate-600">{s.email}</p>
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-4 pr-2">
                                         <div className="text-right hidden sm:block">
-                                            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-0.5">Password</p>
-                                            <code className="bg-slate-900 border border-slate-800 px-2 py-1 rounded text-xs font-mono text-purple-300">{s.password}</code>
+                                            <p className="text-[10px] text-slate-600 font-bold uppercase tracking-wider mb-0.5">Password</p>
+                                            <code className="bg-white border border-slate-200 px-2 py-1 rounded text-xs font-mono text-purple-300">{s.password}</code>
                                         </div>
-                                        <button onClick={() => handleDelete(s.id, s.name)} className="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-colors">
+                                        <button onClick={() => handleDelete(s.id, s.name)} className="p-2.5 rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-slate-900 transition-colors">
                                             <Trash2 size={18} />
                                         </button>
                                     </div>

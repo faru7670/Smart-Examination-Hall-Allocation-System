@@ -122,16 +122,16 @@ export default function ReportsPage({ collegeCode, isStaff }) {
                 <div className="border-b-4 border-indigo-600 pb-6 mb-8 flex justify-between items-end">
                     <div>
                         <h1 className="text-4xl font-black text-slate-800 tracking-tighter mb-2">OFFICIAL SEATING ALLOTMENT</h1>
-                        <p className="text-xl text-slate-500 font-bold uppercase tracking-widest">{hall.name} • {hall.rows} ROWS × {hall.cols} COLS</p>
+                        <p className="text-xl text-slate-600 font-bold uppercase tracking-widest">{hall.name} • {hall.rows} ROWS × {hall.cols} COLS</p>
                     </div>
                     <div className="text-right">
                         <p className="text-indigo-600 font-bold text-2xl mb-1">{collegeCode}</p>
-                        <p className="text-slate-500 font-mono text-sm">{new Date().toLocaleString()}</p>
+                        <p className="text-slate-600 font-mono text-sm">{new Date().toLocaleString()}</p>
                     </div>
                 </div>
 
                 {/* The Visual Tabular Grid */}
-                <div className="border-2 border-slate-800 bg-slate-50 p-6 rounded-xl shadow-inner mb-8">
+                <div className="border-2 border-slate-200 bg-slate-50 p-6 rounded-xl shadow-inner mb-8">
                     <div className="grid gap-[2px] w-full" style={{ gridTemplateColumns: `repeat(${hall.cols}, minmax(0, 1fr))` }}>
                         {grid.map((row, r) => row.map((cell, c) => (
                             <div key={`${r}-${c}`} className={`p-2 border-2 text-center aspect-square flex flex-col justify-center items-center ${cell ? 'bg-white shadow-sm' : 'border-dashed border-slate-300 bg-transparent'}`}
@@ -139,10 +139,10 @@ export default function ReportsPage({ collegeCode, isStaff }) {
                                 {cell ? (
                                     <>
                                         <div className="text-xs font-black text-slate-800 tracking-tighter w-full truncate mb-1">{cell.student_id}</div>
-                                        <div className="text-[9px] text-white px-1.5 py-0.5 rounded-full font-bold shadow-sm" style={{ backgroundColor: colors[cell.subject_code] }}>{cell.subject_code}</div>
+                                        <div className="text-[9px] text-slate-900 px-1.5 py-0.5 rounded-full font-bold shadow-sm" style={{ backgroundColor: colors[cell.subject_code] }}>{cell.subject_code}</div>
                                     </>
                                 ) : (
-                                    <div className="text-[10px] text-slate-400 font-bold opacity-50">Empty</div>
+                                    <div className="text-[10px] text-slate-600 font-bold opacity-50">Empty</div>
                                 )}
                             </div>
                         )))}
@@ -173,7 +173,7 @@ export default function ReportsPage({ collegeCode, isStaff }) {
                         <div className="w-12 h-12 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center"><Printer size={24} /></div>
                         <h2 className="text-3xl font-black">Official Reports & Exports</h2>
                     </div>
-                    <p className="text-slate-400 ml-16">Download precise tabular seating layouts in High-Res PDF & CSV. Email to staff automatically.</p>
+                    <p className="text-slate-600 ml-16">Download precise tabular seating layouts in High-Res PDF & CSV. Email to staff automatically.</p>
                 </div>
             </div>
 
@@ -185,23 +185,23 @@ export default function ReportsPage({ collegeCode, isStaff }) {
 
                         <div className="space-y-5 flex-1">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-400 mb-1 ml-1 uppercase">Target Venue</label>
+                                <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">Target Venue</label>
                                 <select value={selectedHallId} onChange={e => setSelectedHallId(e.target.value)}
-                                    className="w-full bg-slate-900/50 border border-slate-700/50 text-white rounded-xl px-4 py-3 focus:outline-none focus:border-pink-500 appearance-none font-bold">
+                                    className="w-full bg-white/80 border border-slate-200 text-slate-900 rounded-xl px-4 py-3 focus:outline-none focus:border-pink-500 appearance-none font-bold">
                                     <option value="all">🌐 All Halls (List View)</option>
                                     {halls.map(h => <option key={h.id} value={h.id}>🏛️ {h.name}</option>)}
                                 </select>
                             </div>
 
-                            <div className="pt-4 border-t border-slate-800">
-                                <button onClick={handleCSV} className="w-full flex items-center justify-between px-5 py-3.5 bg-slate-800 hover:bg-slate-700 hover:text-white text-slate-300 rounded-xl transition-colors font-bold group mb-3 shadow-lg hover:shadow-cyan-500/10 border border-slate-700">
+                            <div className="pt-4 border-t border-slate-200">
+                                <button onClick={handleCSV} className="w-full flex items-center justify-between px-5 py-3.5 bg-slate-200 hover:bg-slate-700 hover:text-slate-900 text-slate-300 rounded-xl transition-colors font-bold group mb-3 shadow-lg hover:shadow-cyan-500/10 border border-slate-300">
                                     <span className="flex items-center gap-3"><FileSpreadsheet size={18} className="text-cyan-400" /> Export CSV</span>
                                     <Download size={16} className="opacity-50 group-hover:opacity-100" />
                                 </button>
 
                                 <button onClick={() => handlePDF(false)} disabled={generatingPDF || selectedHallId === 'all'}
                                     className={`w-full flex items-center justify-between px-5 py-3.5 rounded-xl transition-all font-bold group mb-3 shadow-lg border relative overflow-hidden
-                                        ${selectedHallId === 'all' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700' : 'bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 border-pink-500/30 hover:border-pink-400'}`}>
+                                        ${selectedHallId === 'all' ? 'bg-slate-200 text-slate-600 cursor-not-allowed border-slate-300' : 'bg-pink-500/10 hover:bg-pink-500/20 text-pink-300 border-pink-500/30 hover:border-pink-400'}`}>
                                     <div className="absolute inset-0 bg-gradient-to-r from-pink-500/0 via-pink-500/10 to-pink-500/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
                                     <span className="flex items-center gap-3 z-10"><FileText size={18} className="text-pink-400" /> {generatingPDF ? 'Rendering...' : 'Print Visual PDF'}</span>
                                     <Download size={16} className={`z-10 ${selectedHallId === 'all' ? 'opacity-30' : 'opacity-80 group-hover:opacity-100'}`} />
@@ -211,11 +211,11 @@ export default function ReportsPage({ collegeCode, isStaff }) {
 
                             {/* Email Feature */}
                             {!isStaff && (
-                                <div className="pt-4 border-t border-slate-800">
-                                    <p className="text-xs text-slate-500 font-semibold uppercase mb-3 text-center tracking-widest">Share Automations</p>
+                                <div className="pt-4 border-t border-slate-200">
+                                    <p className="text-xs text-slate-600 font-semibold uppercase mb-3 text-center tracking-widest">Share Automations</p>
                                     <button onClick={() => handlePDF(true)} disabled={sendingEmail || selectedHallId === 'all'}
                                         className={`w-full flex items-center justify-between px-5 py-3.5 rounded-xl transition-all font-bold group shadow-lg border
-                                            ${selectedHallId === 'all' ? 'bg-slate-800 text-slate-500 cursor-not-allowed border-slate-700' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:border-emerald-400 hover:shadow-emerald-500/20'}`}>
+                                            ${selectedHallId === 'all' ? 'bg-slate-200 text-slate-600 cursor-not-allowed border-slate-300' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:border-emerald-400 hover:shadow-emerald-500/20'}`}>
                                         <span className="flex items-center gap-3"><Send size={18} className="text-emerald-400" /> {sendingEmail ? 'Connecting Outbox...' : 'Email to Staff HQ'}</span>
                                         <Send size={16} className={`transform -rotate-45 ${selectedHallId === 'all' ? 'opacity-30' : 'opacity-80 group-hover:opacity-100 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform'}`} />
                                     </button>
@@ -228,36 +228,36 @@ export default function ReportsPage({ collegeCode, isStaff }) {
                 {/* Data Table Preview */}
                 <div className="lg:col-span-3">
                     <div className="glass p-4 rounded-3xl relative z-10 w-full lg:w-96 mb-4">
-                        <Search className="absolute left-8 top-7 text-slate-500" size={18} />
+                        <Search className="absolute left-8 top-7 text-slate-600" size={18} />
                         <input type="text" placeholder="Search allotment..." value={search} onChange={e => setSearch(e.target.value)}
-                            className="w-full bg-slate-900/50 border border-slate-700/50 rounded-xl pl-12 pr-4 py-2.5 focus:outline-none focus:border-pink-500 transition-colors" />
+                            className="w-full bg-white/80 border border-slate-200 rounded-xl pl-12 pr-4 py-2.5 focus:outline-none focus:border-pink-500 transition-colors" />
                     </div>
 
-                    <div className="glass rounded-3xl overflow-hidden shadow-2xl border border-slate-800 relative group">
+                    <div className="glass rounded-3xl overflow-hidden shadow-2xl border border-slate-200 relative group">
                         <div className="max-h-[600px] overflow-y-auto no-scrollbar">
                             <table className="w-full text-left border-collapse">
-                                <thead className="bg-slate-900/90 sticky top-0 z-10 backdrop-blur-md">
+                                <thead className="bg-white/90 sticky top-0 z-10 backdrop-blur-md">
                                     <tr>
-                                        <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800">Roll No</th>
-                                        <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800">Student Name</th>
-                                        <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800">Hall</th>
-                                        <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800">Seat</th>
-                                        <th className="p-5 text-xs font-bold text-slate-400 uppercase tracking-widest border-b border-slate-800 text-right">Time</th>
+                                        <th className="p-5 text-xs font-bold text-slate-600 uppercase tracking-widest border-b border-slate-200">Roll No</th>
+                                        <th className="p-5 text-xs font-bold text-slate-600 uppercase tracking-widest border-b border-slate-200">Student Name</th>
+                                        <th className="p-5 text-xs font-bold text-slate-600 uppercase tracking-widest border-b border-slate-200">Hall</th>
+                                        <th className="p-5 text-xs font-bold text-slate-600 uppercase tracking-widest border-b border-slate-200">Seat</th>
+                                        <th className="p-5 text-xs font-bold text-slate-600 uppercase tracking-widest border-b border-slate-200 text-right">Time</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {loading ? (
-                                        [1, 2, 3].map(i => <tr key={i} className="border-b border-slate-800/50"><td colSpan={5} className="p-5"><div className="h-5 shimmer w-full opacity-30 rounded" /></td></tr>)
+                                        [1, 2, 3].map(i => <tr key={i} className="border-b border-slate-200/50"><td colSpan={5} className="p-5"><div className="h-5 shimmer w-full opacity-30 rounded" /></td></tr>)
                                     ) : filtered.length === 0 ? (
-                                        <tr><td colSpan="5" className="p-16 text-center text-slate-500 font-bold text-lg"><Calendar className="mx-auto mb-3 opacity-30" size={40} />No matches found.</td></tr>
+                                        <tr><td colSpan="5" className="p-16 text-center text-slate-600 font-bold text-lg"><Calendar className="mx-auto mb-3 opacity-30" size={40} />No matches found.</td></tr>
                                     ) : (
                                         filtered.map(a => (
-                                            <tr key={a.id} className="border-b border-slate-800/50 hover:bg-slate-800/40 transition-colors">
+                                            <tr key={a.id} className="border-b border-slate-200/50 hover:bg-slate-200/40 transition-colors">
                                                 <td className="p-5 font-mono font-bold text-pink-400">{a.student_id}</td>
-                                                <td className="p-5 font-bold text-white">{a.student_name} <br /><span className="text-xs text-slate-500 font-mono bg-slate-800 px-1 rounded">{a.subject_code}</span></td>
+                                                <td className="p-5 font-bold text-slate-900">{a.student_name} <br /><span className="text-xs text-slate-600 font-mono bg-slate-200 px-1 rounded">{a.subject_code}</span></td>
                                                 <td className="p-5 text-indigo-300 font-bold">{a.hall_name}</td>
-                                                <td className="p-5 font-mono text-slate-300">R<span className="text-white font-bold">{a.row_num}</span> • C<span className="text-white font-bold">{a.col_num}</span></td>
-                                                <td className="p-5 text-right text-xs text-slate-500 font-bold tracking-widest">09:00 AM</td>
+                                                <td className="p-5 font-mono text-slate-300">R<span className="text-slate-900 font-bold">{a.row_num}</span> • C<span className="text-slate-900 font-bold">{a.col_num}</span></td>
+                                                <td className="p-5 text-right text-xs text-slate-600 font-bold tracking-widest">09:00 AM</td>
                                             </tr>
                                         ))
                                     )}

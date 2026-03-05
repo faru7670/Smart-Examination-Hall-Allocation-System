@@ -156,7 +156,7 @@ export default function AllocationPage({ collegeCode, isStaff }) {
         return unique.reduce((acc, code, idx) => { acc[code] = palette[idx % palette.length]; return acc }, {})
     }, [hallAllocations])
 
-    if (loading) return <div className="h-64 rounded-3xl shimmer border border-slate-800 animate-slide-up" />
+    if (loading) return <div className="h-64 rounded-3xl shimmer border border-slate-200 animate-slide-up" />
 
     // --- 2D Grid Render ---
     const render2DMenu = () => {
@@ -172,12 +172,12 @@ export default function AllocationPage({ collegeCode, isStaff }) {
                     {grid.map((row, r) => row.map((cell, c) => (
                         <div key={`${r}-${c}`}
                             onClick={() => cell && setSelectedStudent(cell)}
-                            className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center text-[10px] font-bold border-2 transition-all cursor-pointer ${cell ? 'hover:scale-110 shadow-lg' : 'border-dashed border-slate-700 bg-slate-900/40 relative group'}`}
+                            className={`w-16 h-16 rounded-2xl flex flex-col items-center justify-center text-[10px] font-bold border-2 transition-all cursor-pointer ${cell ? 'hover:scale-110 shadow-lg' : 'border-dashed border-slate-300 bg-white/40 relative group'}`}
                             style={cell ? { backgroundColor: `${subjectColors[cell.subject_code]}20`, borderColor: subjectColors[cell.subject_code], color: subjectColors[cell.subject_code] } : {}}>
                             {cell ? (
                                 <>
-                                    <span className="text-white text-xs whitespace-nowrap overflow-hidden text-ellipsis w-14 text-center">{cell.student_id}</span>
-                                    <span className="opacity-70 mt-1 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: subjectColors[cell.subject_code] }}><span className="text-white mix-blend-difference">{cell.subject_code}</span></span>
+                                    <span className="text-slate-900 text-xs whitespace-nowrap overflow-hidden text-ellipsis w-14 text-center">{cell.student_id}</span>
+                                    <span className="opacity-70 mt-1 px-1.5 py-0.5 rounded-full" style={{ backgroundColor: subjectColors[cell.subject_code] }}><span className="text-slate-900 mix-blend-difference">{cell.subject_code}</span></span>
                                 </>
                             ) : (
                                 <span className="text-slate-600 opacity-0 group-hover:opacity-100 transition-opacity">R{r + 1}C{c + 1}</span>
@@ -197,19 +197,19 @@ export default function AllocationPage({ collegeCode, isStaff }) {
                         <div className="w-12 h-12 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center"><Activity size={24} /></div>
                         <h2 className="text-3xl font-black">Allocation Visualizer</h2>
                     </div>
-                    <p className="text-slate-400 ml-16">{isStaff ? "View seating arrangements." : "Run the matrix algorithm to generate zero-conflict seating."}</p>
+                    <p className="text-slate-600 ml-16">{isStaff ? "View seating arrangements." : "Run the matrix algorithm to generate zero-conflict seating."}</p>
                 </div>
 
-                <div className="flex items-center gap-3 ml-16 lg:ml-0 bg-slate-900/50 p-2 rounded-2xl border border-slate-800">
-                    <button onClick={() => setViewMode('3d')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-colors ${viewMode === '3d' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                <div className="flex items-center gap-3 ml-16 lg:ml-0 bg-white/80 p-2 rounded-2xl border border-slate-200">
+                    <button onClick={() => setViewMode('3d')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-colors ${viewMode === '3d' ? 'bg-indigo-500 text-slate-900 shadow-lg shadow-indigo-500/20' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'}`}>
                         <Maximize2 size={18} /> 3D Enivornment
                     </button>
-                    <button onClick={() => setViewMode('2d')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-colors ${viewMode === '2d' ? 'bg-indigo-500 text-white shadow-lg shadow-indigo-500/20' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>
+                    <button onClick={() => setViewMode('2d')} className={`flex items-center gap-2 px-6 py-3 rounded-xl font-bold transition-colors ${viewMode === '2d' ? 'bg-indigo-500 text-slate-900 shadow-lg shadow-indigo-500/20' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'}`}>
                         <Columns size={18} /> 2D Matrix Map
                     </button>
                     {!isStaff && (
-                        <div className="border-l border-slate-700 pl-3 ml-2 border-dashed">
-                            <button onClick={handleRunLayout} disabled={running} className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all w-max leading-none">
+                        <div className="border-l border-slate-300 pl-3 ml-2 border-dashed">
+                            <button onClick={handleRunLayout} disabled={running} className="flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-900 hover:shadow-lg hover:shadow-emerald-500/30 hover:-translate-y-0.5 transition-all w-max leading-none">
                                 {running ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Processing</> : <><Play fill="currentColor" size={16} /> Run Algorithm</>}
                             </button>
                         </div>
@@ -220,11 +220,11 @@ export default function AllocationPage({ collegeCode, isStaff }) {
             {halls.length > 0 ? (
                 <div className="flex flex-col flex-1 overflow-hidden min-h-[500px]">
                     {/* Hall Tabs */}
-                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 shrink-0 border-b border-slate-800">
+                    <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2 shrink-0 border-b border-slate-200">
                         {halls.map(h => (
                             <button key={h.id} onClick={() => setActiveHallId(h.id)}
                                 className={`px-5 py-3 rounded-t-2xl font-bold text-sm tracking-widest whitespace-nowrap transition-colors uppercase relative
-                                    ${activeHallId === h.id ? 'text-white bg-slate-900 border-t border-x border-slate-800' : 'text-slate-500 hover:text-slate-300'}`}>
+                                    ${activeHallId === h.id ? 'text-slate-900 bg-white border-t border-x border-slate-200' : 'text-slate-600 hover:text-slate-300'}`}>
                                 {h.name}
                                 {activeHallId === h.id && <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-t-full" />}
                             </button>
@@ -232,13 +232,13 @@ export default function AllocationPage({ collegeCode, isStaff }) {
                     </div>
 
                     {/* Stage */}
-                    <div className="flex-1 bg-slate-950 rounded-b-3xl rounded-tr-3xl relative overflow-hidden border border-t-0 border-slate-800 shadow-2xl flex">
+                    <div className="flex-1 bg-slate-50 rounded-b-3xl rounded-tr-3xl relative overflow-hidden border border-t-0 border-slate-200 shadow-2xl flex">
 
                         {viewMode === '3d' ? (
                             <div className="w-full h-full relative cursor-move">
                                 <div className="absolute top-6 left-6 z-10 pointer-events-none mix-blend-difference">
-                                    <h3 className="text-4xl font-black text-white mix-blend-overlay opacity-50 tracking-tighter uppercase">{activeHall?.name}</h3>
-                                    <p className="text-slate-400 font-mono font-bold tracking-widest">3D HALL RENDER</p>
+                                    <h3 className="text-4xl font-black text-slate-900 mix-blend-overlay opacity-50 tracking-tighter uppercase">{activeHall?.name}</h3>
+                                    <p className="text-slate-600 font-mono font-bold tracking-widest">3D HALL RENDER</p>
                                 </div>
                                 <Canvas camera={{ position: [0, 8, 12], fov: 45 }}>
                                     <color attach="background" args={['#020617']} />
@@ -251,53 +251,53 @@ export default function AllocationPage({ collegeCode, isStaff }) {
 
                                     <HallLayout3D hall={activeHall} allocations={hallAllocations} onSeatClick={setSelectedStudent} />
                                 </Canvas>
-                                <div className="absolute bottom-6 right-6 z-10 glass px-4 py-2 rounded-xl text-xs font-mono font-bold text-slate-400 border-indigo-500/20 text-right">
+                                <div className="absolute bottom-6 right-6 z-10 glass px-4 py-2 rounded-xl text-xs font-mono font-bold text-slate-600 border-indigo-500/20 text-right">
                                     <p>Left Click: Rotate Scene</p>
                                     <p>Scroll: Zoom in/out</p>
                                     <p className="text-indigo-400">Click Seat: View Details</p>
                                 </div>
                             </div>
                         ) : (
-                            <div className="w-full h-full bg-slate-900/50 flex items-center justify-center p-8">
+                            <div className="w-full h-full bg-white/80 flex items-center justify-center p-8">
                                 {render2DMenu()}
                             </div>
                         )}
 
                         {/* Subject Legend */}
                         <div className="absolute top-6 right-6 w-56 glass p-5 rounded-2xl shadow-xl z-10 border-indigo-500/20">
-                            <h4 className="font-bold text-xs uppercase tracking-widest text-slate-400 mb-4 border-b border-slate-800 pb-2">Subject Legend</h4>
+                            <h4 className="font-bold text-xs uppercase tracking-widest text-slate-600 mb-4 border-b border-slate-200 pb-2">Subject Legend</h4>
                             {Object.entries(subjectColors).length > 0 ? (
                                 <div className="space-y-3">
                                     {Object.entries(subjectColors).map(([sub, col]) => (
                                         <div key={sub} className="flex items-center gap-3">
                                             <div className="w-4 h-4 rounded-full border border-white/20 shadow-lg" style={{ backgroundColor: col, boxShadow: `0 0 10px ${col}80` }} />
-                                            <span className="text-sm font-bold text-white tracking-widest font-mono">{sub}</span>
+                                            <span className="text-sm font-bold text-slate-900 tracking-widest font-mono">{sub}</span>
                                         </div>
                                     ))}
                                 </div>
-                            ) : <p className="text-xs text-slate-500 font-mono">No allocation data</p>}
+                            ) : <p className="text-xs text-slate-600 font-mono">No allocation data</p>}
                         </div>
 
                         {/* Student Details Modal */}
                         {selectedStudent && (
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 glass p-6 rounded-3xl z-20 shadow-2xl border-purple-500/50 animate-slide-up bg-slate-900/95 backdrop-blur-xl">
-                                <button onClick={() => setSelectedStudent(null)} className="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 glass p-6 rounded-3xl z-20 shadow-2xl border-purple-500/50 animate-slide-up bg-white/95 backdrop-blur-xl">
+                                <button onClick={() => setSelectedStudent(null)} className="absolute top-4 right-4 text-slate-600 hover:text-slate-900 transition">
                                     <X size={20} />
                                 </button>
                                 <div className="w-16 h-16 rounded-full mx-auto mb-4 border-2 shadow-xl flex items-center justify-center text-2xl" style={{ borderColor: subjectColors[selectedStudent.subject_code], backgroundColor: `${subjectColors[selectedStudent.subject_code]}20`, color: subjectColors[selectedStudent.subject_code] }}>
                                     👨‍🎓
                                 </div>
-                                <h3 className="text-xl font-black text-center text-white leading-tight mb-1">{selectedStudent.student_name}</h3>
-                                <p className="text-sm text-center text-slate-400 font-mono tracking-wider mb-6">{selectedStudent.student_id}</p>
+                                <h3 className="text-xl font-black text-center text-slate-900 leading-tight mb-1">{selectedStudent.student_name}</h3>
+                                <p className="text-sm text-center text-slate-600 font-mono tracking-wider mb-6">{selectedStudent.student_id}</p>
 
                                 <div className="space-y-2">
-                                    <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Subject</span>
+                                    <div className="flex justify-between items-center bg-slate-100 p-3 rounded-xl border border-slate-200">
+                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Subject</span>
                                         <span className="text-sm font-black tracking-widest" style={{ color: subjectColors[selectedStudent.subject_code] }}>{selectedStudent.subject_code}</span>
                                     </div>
-                                    <div className="flex justify-between items-center bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
-                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Seat Position</span>
-                                        <span className="text-sm font-black text-white tracking-widest font-mono">R{selectedStudent.row_num} • C{selectedStudent.col_num}</span>
+                                    <div className="flex justify-between items-center bg-slate-100 p-3 rounded-xl border border-slate-200">
+                                        <span className="text-xs font-bold text-slate-600 uppercase tracking-widest">Seat Position</span>
+                                        <span className="text-sm font-black text-slate-900 tracking-widest font-mono">R{selectedStudent.row_num} • C{selectedStudent.col_num}</span>
                                     </div>
                                 </div>
                             </div>
@@ -305,9 +305,9 @@ export default function AllocationPage({ collegeCode, isStaff }) {
                     </div>
                 </div>
             ) : (
-                <div className="glass p-16 rounded-3xl text-center border-dashed border-2 border-slate-700 h-64 flex flex-col items-center justify-center text-slate-500">
+                <div className="glass p-16 rounded-3xl text-center border-dashed border-2 border-slate-300 h-64 flex flex-col items-center justify-center text-slate-600">
                     <Activity size={40} className="mb-4 opacity-50" />
-                    <p className="font-bold text-xl text-white mb-2">No Halls Available</p>
+                    <p className="font-bold text-xl text-slate-900 mb-2">No Halls Available</p>
                     <p className="text-sm">Please create halls in the Halls tab before running algorithms.</p>
                 </div>
             )}

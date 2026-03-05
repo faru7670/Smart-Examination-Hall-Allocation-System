@@ -27,14 +27,14 @@ function AppRouter() {
 
     if (!isAuthReady) {
         return (
-            <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+            <div className={`min-h-screen flex items-center justify-center ${theme === 'dark' ? 'bg-slate-50 text-slate-900' : 'bg-slate-50 text-slate-900'}`}>
                 <div className="animate-spin text-4xl">⏳</div>
             </div>
         )
     }
 
     return (
-        <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-950 text-white selection:bg-indigo-500/30' : 'bg-slate-50 text-slate-900 selection:bg-indigo-500/20'}`}>
+        <div className={`min-h-screen transition-colors duration-300 ${theme === 'dark' ? 'bg-slate-50 text-slate-900 selection:bg-indigo-500/30' : 'bg-slate-50 text-slate-900 selection:bg-indigo-500/20'}`}>
             <Routes>
                 {/* Public */}
                 <Route path="/" element={<LandingPage />} />
@@ -62,7 +62,7 @@ function ProtectedRoute({ role, children }) {
     const { currentUser, userData, userLoading } = useAuth()
 
     if (userLoading) {
-        return <div className="min-h-screen flex items-center justify-center text-slate-400">Loading your profile...</div>
+        return <div className="min-h-screen flex items-center justify-center text-slate-600">Loading your profile...</div>
     }
 
     if (!currentUser) return <Navigate to="/" replace />

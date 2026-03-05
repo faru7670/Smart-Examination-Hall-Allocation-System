@@ -43,9 +43,9 @@ export default function AdminDashboard() {
     if (!userData?.collegeCode) return <div className="p-8 text-center text-red-500">Error loading Admin Context</div>
 
     return (
-        <div className={`min-h-screen ${theme === 'dark' ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'}`}>
+        <div className={`min-h-screen ${theme === 'dark' ? 'bg-slate-50 text-slate-900' : 'bg-slate-50 text-slate-900'}`}>
             {/* Top Navbar */}
-            <header className="sticky top-0 z-50 glass border-b border-slate-800 shadow-sm">
+            <header className="sticky top-0 z-50 glass border-b border-slate-200 shadow-sm">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
                     <div className="flex items-center gap-4 py-4">
                         <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-xl shadow-lg shadow-indigo-500/30">🏛️</div>
@@ -61,7 +61,7 @@ export default function AdminDashboard() {
                             return (
                                 <button key={t.id} onClick={() => setTab(t.id)}
                                     className={`relative px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap
-                                    ${active ? 'text-indigo-500 bg-indigo-500/10' : 'text-slate-400 hover:text-indigo-400 hover:bg-slate-800/50'}`}>
+                                    ${active ? 'text-indigo-500 bg-indigo-500/10' : 'text-slate-600 hover:text-indigo-400 hover:bg-slate-100'}`}>
                                     {t.label}
                                     {active && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" />}
                                 </button>
@@ -69,19 +69,19 @@ export default function AdminDashboard() {
                         })}
                     </nav>
 
-                    <div className="flex items-center gap-5 py-4 pl-4 border-l border-slate-800 ml-2 hidden sm:flex">
+                    <div className="flex items-center gap-5 py-4 pl-4 border-l border-slate-200 ml-2 hidden sm:flex">
                         <div className="flex items-center gap-3">
                             {userData.profileUrl ? (
-                                <img src={userData.profileUrl} alt="Avatar" className="w-8 h-8 rounded-full border border-slate-700 object-cover" />
+                                <img src={userData.profileUrl} alt="Avatar" className="w-8 h-8 rounded-full border border-slate-300 object-cover" />
                             ) : (
-                                <div className="w-8 h-8 rounded-full bg-slate-800 text-slate-400 flex items-center justify-center font-bold text-xs border border-slate-700">{userData.name?.[0]?.toUpperCase()}</div>
+                                <div className="w-8 h-8 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center font-bold text-xs border border-slate-300">{userData.name?.[0]?.toUpperCase()}</div>
                             )}
                             <div className="text-right flex flex-col justify-center">
                                 <span className="text-sm font-bold leading-none mb-1">{userData.name}</span>
-                                <span className="text-[10px] text-slate-500 uppercase tracking-wider font-bold leading-none">Admin</span>
+                                <span className="text-[10px] text-slate-600 uppercase tracking-wider font-bold leading-none">Admin</span>
                             </div>
                         </div>
-                        <button onClick={handleLogout} className="bg-slate-800/50 hover:bg-red-500/10 text-slate-400 hover:text-red-400 border border-slate-700 hover:border-red-500/30 px-3 py-1.5 rounded-lg text-sm transition-all font-semibold">
+                        <button onClick={handleLogout} className="bg-slate-100 hover:bg-red-500/10 text-slate-600 hover:text-red-400 border border-slate-300 hover:border-red-500/30 px-3 py-1.5 rounded-lg text-sm transition-all font-semibold">
                             Logout
                         </button>
                     </div>

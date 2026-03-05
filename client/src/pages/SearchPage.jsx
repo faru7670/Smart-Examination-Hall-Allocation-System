@@ -58,10 +58,10 @@ export default function SearchPage() {
                                         <HiOutlineLocationMarker className="w-6 h-6 text-primary-400" />
                                     </div>
                                     <div className="flex-1 grid grid-cols-2 md:grid-cols-4 gap-4">
-                                        <div><p className="text-xs text-dark-400">Student ID</p><p className="text-white font-mono font-semibold">{r.student_id}</p></div>
-                                        <div><p className="text-xs text-dark-400">Name</p><p className="text-white">{r.student_name}</p></div>
+                                        <div><p className="text-xs text-dark-400">Student ID</p><p className="text-slate-900 font-mono font-semibold">{r.student_id}</p></div>
+                                        <div><p className="text-xs text-dark-400">Name</p><p className="text-slate-900">{r.student_name}</p></div>
                                         <div><p className="text-xs text-dark-400">Subject</p><p className="text-primary-400">{r.subject_code}</p></div>
-                                        <div><p className="text-xs text-dark-400">Seat</p><p className="text-white">{r.hall_name} — Row {r.row_num}, Col {r.col_num}</p></div>
+                                        <div><p className="text-xs text-dark-400">Seat</p><p className="text-slate-900">{r.hall_name} — Row {r.row_num}, Col {r.col_num}</p></div>
                                     </div>
                                 </div>
                             </div>

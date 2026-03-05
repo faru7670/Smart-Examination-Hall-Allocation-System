@@ -21,7 +21,7 @@ export default function PublicLayout() {
                     <div className="flex items-center justify-between h-16">
                         <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary-500 to-accent-500 flex items-center justify-center shadow-lg shadow-primary-500/20">
-                                <HiOutlineAcademicCap className="w-6 h-6 text-white" />
+                                <HiOutlineAcademicCap className="w-6 h-6 text-slate-900" />
                             </div>
                             <span className="text-xl font-bold bg-gradient-to-r from-white to-dark-300 bg-clip-text text-transparent hidden sm:block">
                                 ExamHall
@@ -36,7 +36,7 @@ export default function PublicLayout() {
                                     className={({ isActive }) =>
                                         `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive
                                             ? 'bg-primary-500/15 text-primary-400'
-                                            : 'text-dark-400 hover:text-white hover:bg-dark-800'
+                                            : 'text-dark-400 hover:text-slate-900 hover:bg-dark-800'
                                         }`
                                     }
                                 >

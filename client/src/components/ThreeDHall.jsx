@@ -17,7 +17,7 @@ const SUBJECT_COLORS = {
 };
 
 const Seat = ({ position, data, isSelected, onClick, colorMap }) => {
-    const defaultColor = '#334155'; // dark-700 equivalent
+    const defaultColor = '#e2e8f0'; // slate-200
     const highlightColor = '#38bdf8'; // sky-400
 
     let seatColor = defaultColor;
@@ -37,7 +37,7 @@ const Seat = ({ position, data, isSelected, onClick, colorMap }) => {
             {/* Table Top */}
             <mesh position={[0, 0.25, 0]} castShadow>
                 <boxGeometry args={[0.9, 0.05, 0.9]} />
-                <meshStandardMaterial color={isSelected ? '#7dd3fc' : '#475569'} roughness={0.4} />
+                <meshStandardMaterial color={isSelected ? '#7dd3fc' : '#cbd5e1'} roughness={0.4} />
             </mesh>
 
             {/* Display text above if it's occupied or selected */}
@@ -45,7 +45,7 @@ const Seat = ({ position, data, isSelected, onClick, colorMap }) => {
                 <Text
                     position={[0, 0.8, 0]}
                     fontSize={0.2}
-                    color="white"
+                    color="#000000"
                     anchorX="center"
                     anchorY="middle"
                     rotation={[-Math.PI / 4, 0, 0]}
@@ -75,7 +75,7 @@ export default function ThreeDHall({ hall, gridData, subjectMap = {}, onSeatClic
     };
 
     return (
-        <div style={{ height, width: '100%', borderRadius: '1rem', overflow: 'hidden', background: '#0f172a' }}>
+        <div style={{ height, width: '100%', borderRadius: '1rem', overflow: 'hidden', background: '#ffffff', border: '1px solid #e2e8f0' }}>
             <Canvas shadows camera={{ position: [0, Math.max(rows, cols) * 1.5, Math.max(rows, cols) * 1.5], fov: 45 }}>
                 <ambientLight intensity={0.5} />
                 <directionalLight
@@ -88,7 +88,7 @@ export default function ThreeDHall({ hall, gridData, subjectMap = {}, onSeatClic
                 {/* Floor */}
                 <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.5, 0]} receiveShadow>
                     <planeGeometry args={[cols * 2 + 5, rows * 2 + 5]} />
-                    <meshStandardMaterial color="#1e293b" />
+                    <meshStandardMaterial color="#f8fafc" />
                 </mesh>
 
                 {/* Grid of Seats */}

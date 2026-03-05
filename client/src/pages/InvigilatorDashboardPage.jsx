@@ -52,7 +52,7 @@ export default function InvigilatorDashboardPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-dark-400 text-sm font-medium mb-1">Assigned Halls</p>
-                            <h3 className="text-3xl font-bold text-white group-hover:text-primary-400 transition-colors">{halls.length}</h3>
+                            <h3 className="text-3xl font-bold text-slate-900 group-hover:text-primary-400 transition-colors">{halls.length}</h3>
                         </div>
                         <div className="w-12 h-12 rounded-xl bg-primary-500/10 flex items-center justify-center">
                             <HiOutlineOfficeBuilding className="w-6 h-6 text-primary-400" />
@@ -64,7 +64,7 @@ export default function InvigilatorDashboardPage() {
                     <div className="flex items-center justify-between">
                         <div>
                             <p className="text-dark-400 text-sm font-medium mb-1">Total Students</p>
-                            <h3 className="text-3xl font-bold text-white group-hover:text-accent-400 transition-colors">{allocations.length}</h3>
+                            <h3 className="text-3xl font-bold text-slate-900 group-hover:text-accent-400 transition-colors">{allocations.length}</h3>
                         </div>
                         <div className="w-12 h-12 rounded-xl bg-accent-500/10 flex items-center justify-center">
                             <HiOutlineUserGroup className="w-6 h-6 text-accent-400" />
@@ -76,7 +76,7 @@ export default function InvigilatorDashboardPage() {
                     <div className="flex items-center justify-between mb-2">
                         <div>
                             <p className="text-dark-400 text-sm font-medium mb-1">Print Duties</p>
-                            <h3 className="text-xl font-bold text-white">Duty Chart</h3>
+                            <h3 className="text-xl font-bold text-slate-900">Duty Chart</h3>
                         </div>
                         <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
                             <HiOutlineDocumentReport className="w-6 h-6 text-green-400" />
@@ -86,7 +86,7 @@ export default function InvigilatorDashboardPage() {
                 </motion.div>
             </div>
 
-            <h3 className="text-xl font-semibold text-white mt-8 mb-4">Your Hall Assignments</h3>
+            <h3 className="text-xl font-semibold text-slate-900 mt-8 mb-4">Your Hall Assignments</h3>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {halls.map((hall, idx) => {
                     const hallAllocs = allocations.filter(a => a.hall_id === hall.id);
@@ -100,7 +100,7 @@ export default function InvigilatorDashboardPage() {
                         >
                             <div className="flex justify-between items-start mb-4">
                                 <div>
-                                    <h4 className="text-lg font-bold text-white">{hall.name}</h4>
+                                    <h4 className="text-lg font-bold text-slate-900">{hall.name}</h4>
                                     <p className="text-sm text-dark-400">{hall.rows}x{hall.cols} Grid Layout</p>
                                 </div>
                                 <span className="px-3 py-1 bg-primary-500/20 text-primary-300 rounded-full text-xs font-semibold">
@@ -121,7 +121,7 @@ export default function InvigilatorDashboardPage() {
                                         {hallAllocs.slice(0, 5).map(a => (
                                             <tr key={a.id} className="hover:bg-dark-800/30 transition-colors">
                                                 <td className="py-2 text-sm text-dark-300">{a.student_id}</td>
-                                                <td className="py-2 text-sm font-medium text-white">{a.student_name}</td>
+                                                <td className="py-2 text-sm font-medium text-slate-900">{a.student_name}</td>
                                                 <td className="py-2 text-sm font-mono text-primary-400 text-right">R{a.row_num}C{a.col_num}</td>
                                             </tr>
                                         ))}
@@ -129,7 +129,7 @@ export default function InvigilatorDashboardPage() {
                                 </table>
                                 {hallAllocs.length > 5 && (
                                     <div className="text-center mt-3 pt-3 border-t border-dark-700/50">
-                                        <button className="text-xs text-dark-400 hover:text-white transition-colors">View all {hallAllocs.length} students...</button>
+                                        <button className="text-xs text-dark-400 hover:text-slate-900 transition-colors">View all {hallAllocs.length} students...</button>
                                     </div>
                                 )}
                             </div>
