@@ -8,9 +8,8 @@ import { GraduationCap, ArrowLeft, Search, MapPin, Clock } from 'lucide-react'
 export default function StudentPortal() {
     const toast = useToast()
     const [collegeCode, setCollegeCode] = useState('')
-    const [rollNo, setRollNo] = useState('')
     const [loading, setLoading] = useState(false)
-    const [allocation, setAllocation] = useState(null)
+    const [allocations, setAllocations] = useState([])
     const [searched, setSearched] = useState(false)
 
     const handleSearch = async (e) => {
@@ -19,24 +18,21 @@ export default function StudentPortal() {
         setSearched(true)
 
         try {
-            if (!collegeCode || !rollNo) throw new Error("Please fill all fields")
+            if (!collegeCode) throw new Error("Please enter a College Code")
 
-            const q = query(
-                collection(db, `colleges/${collegeCode.toUpperCase()}/allocations`),
-                where('student_id', '==', rollNo.trim())
-            )
+            const q = query(collection(db, `colleges/${collegeCode.toUpperCase()}/allocations`))
             const snap = await getDocs(q)
 
             if (snap.empty) {
-                setAllocation(null)
-                toast.error("No seat allocation found for this Roll No.")
+                setAllocations([])
+                toast.error("No seat allocations found for this College.")
             } else {
-                setAllocation(snap.docs[0].data())
-                toast.success("Seat found!")
+                setAllocations(snap.docs.map(doc => doc.data()))
+                toast.success(`Found ${snap.docs.length} seat allocations!`)
             }
         } catch (err) {
             toast.error(err.message)
-            setAllocation(null)
+            setAllocations([])
         }
         setLoading(false)
     }
@@ -61,18 +57,12 @@ export default function StudentPortal() {
 
                 <div className="glass p-8 rounded-3xl shadow-2xl animate-slide-up" style={{ animationDelay: '0.1s' }}>
                     <form onSubmit={handleSearch} className="space-y-5">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-4">
                             <div>
                                 <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">College Code</label>
                                 <input type="text" value={collegeCode} onChange={e => setCollegeCode(e.target.value.toUpperCase())}
-                                    placeholder="E.g. A1B2C3" maxLength={6} required
+                                    placeholder="Enter the 6-digit College Code provided by Admin" maxLength={6} required
                                     className="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors text-center font-mono uppercase tracking-widest text-lg" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-600 mb-1 ml-1 uppercase">Roll Number</label>
-                                <input type="text" value={rollNo} onChange={e => setRollNo(e.target.value)} required
-                                    placeholder="Your ID"
-                                    className="w-full bg-white/80 border border-slate-200 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors text-center font-mono text-lg" />
                             </div>
                         </div>
 
@@ -84,30 +74,26 @@ export default function StudentPortal() {
                 </div>
 
                 {/* Results Card */}
-                {searched && !loading && allocation && (
+                {searched && !loading && allocations.length > 0 && (
                     <div className="mt-8 glass border-emerald-500/30 p-8 rounded-3xl shadow-2xl animate-slide-up relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-3xl" />
+                        <h3 className="text-xl font-bold text-slate-900 mb-6 text-center border-b border-slate-200 pb-4">All Seating Allocations</h3>
 
-                        <div className="text-center mb-6 border-b border-slate-200 pb-6">
-                            <h3 className="text-2xl font-bold text-slate-900 mb-1">{allocation.student_name}</h3>
-                            <p className="text-emerald-400 font-mono">{allocation.student_id} • Subject: {allocation.subject_code}</p>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-4 text-center">
-                            <div className="bg-white/80 rounded-2xl p-4 border border-slate-200">
-                                <MapPin className="mx-auto text-slate-600 mb-2" size={24} />
-                                <p className="text-sm text-slate-600 uppercase tracking-wide font-semibold mb-1">Hall</p>
-                                <p className="text-xl font-bold text-slate-900">{allocation.hall_name}</p>
-                            </div>
-                            <div className="bg-white/80 rounded-2xl p-4 border border-slate-200">
-                                <div className="text-2xl mb-2">🪑</div>
-                                <p className="text-sm text-slate-600 uppercase tracking-wide font-semibold mb-1">Seat</p>
-                                <p className="text-xl font-bold text-slate-900">Row {allocation.row_num} • Col {allocation.col_num}</p>
-                            </div>
-                        </div>
-
-                        <div className="mt-6 flex items-center justify-center gap-2 text-sm text-slate-600 bg-white/40 py-3 rounded-xl">
-                            <Clock size={16} /> Exam starts at 09:00 AM • Please arrive 15 mins early.
+                        <div className="max-h-[500px] overflow-y-auto pr-2 space-y-3">
+                            {allocations.map((alloc, idx) => (
+                                <div key={idx} className="bg-white/80 rounded-2xl p-4 border border-slate-200 flex items-center justify-between hover:border-emerald-300 transition-colors">
+                                    <div>
+                                        <p className="font-bold text-slate-900 text-lg">{alloc.student_name}</p>
+                                        <p className="text-slate-600 font-mono text-sm">{alloc.student_id} • {alloc.subject_code}</p>
+                                    </div>
+                                    <div className="text-right">
+                                        <div className="bg-emerald-100 text-emerald-800 text-xs font-bold px-3 py-1 rounded-full inline-block mb-1">
+                                            {alloc.hall_name}
+                                        </div>
+                                        <p className="text-slate-900 font-bold text-sm">Row {alloc.row_num}, Col {alloc.col_num}</p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 )}
