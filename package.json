@@ -9,6 +9,6 @@
         "start": "node server/server.js",
         "dev:server": "node server/server.js",
         "dev:client": "cd client && npx vite",
-        "render-build": "cd client && npm install && npm run build && cd ../server && npm install"
+        "render-build": "cd client && npm install --include=dev && npm run build && cd ../server && npm install"
     }
 }
